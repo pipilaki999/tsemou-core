@@ -1,0 +1,19 @@
+TSEMOU Core Dev 3.0.5
+
+Milestone: Automatic Evidence Creation runtime-file layer.
+
+Rules preserved:
+- No AI.
+- No Trust Engine work.
+- No Fake News / Reputation / NLP.
+- Intermediate data does not burden WordPress database.
+
+Storage policy introduced:
+Runtime -> queue/options for control state only.
+Temporary acquisition data -> JSON files in wp-content/uploads/tsemou-runtime-storage/.
+Permanent Evidence database writes -> later phase, not 3.0.5.
+
+Test:
+TSEMOU OS -> Discovery Orchestrator -> Run One Step when automatic_evidence_creation is pending.
+Expected result:
+Automatic Evidence Creation completed. Evidence Draft created in runtime storage. Automatic Linking queued.

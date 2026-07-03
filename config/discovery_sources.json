@@ -1,0 +1,36 @@
+{
+  "version": "1.0",
+  "updated": "2026-06-29",
+  "data": {
+    "GR": {
+      "registry": [],
+      "stock_exchanges": [],
+      "business_directories": [],
+      "notes": "Add trusted Greek public sources later."
+    },
+    "US": {
+      "registry": [],
+      "stock_exchanges": [],
+      "business_directories": [],
+      "notes": "Add trusted US public sources later."
+    },
+    "DE": {
+      "registry": [],
+      "stock_exchanges": [],
+      "business_directories": [],
+      "notes": "Add trusted German public sources later."
+    },
+    "JP": {
+      "registry": [],
+      "stock_exchanges": [],
+      "business_directories": [],
+      "notes": "Add trusted Japanese public sources later."
+    },
+    "GB": {
+      "registry": [],
+      "stock_exchanges": [],
+      "business_directories": [],
+      "notes": "Add trusted UK public sources later."
+    }
+  }
+}

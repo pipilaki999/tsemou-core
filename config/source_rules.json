@@ -1,0 +1,7 @@
+{
+  "version": "3.0.3",
+  "updated": "2026-07-02",
+  "data": {
+    "notes": "Phase A source rules are intentionally simple. No AI. No trust scoring. Resolver uses country and industry filters only."
+  }
+}

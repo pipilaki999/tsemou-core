@@ -1,0 +1,12 @@
+{
+  "version": "1.1",
+  "updated": "2026-06-30",
+  "data": {
+    "base_score": 5.0,
+    "evidence_weight": 85,
+    "community_weight": 15,
+    "max_single_impact": 1.0,
+    "positive_impact_factor": 0.6,
+    "principle": "Trust is earned from a neutral 5/10 baseline. Absence of negative evidence is not positive evidence."
+  }
+}

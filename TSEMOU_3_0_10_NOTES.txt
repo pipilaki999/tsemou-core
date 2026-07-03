@@ -1,0 +1,19 @@
+TSEMOU Core Dev 3.0.10
+
+Milestone: Phase A Automatic Linking
+
+Changes:
+- Added Automatic Linking Engine under TSEMOU OS.
+- Added runtime link records for Evidence Draft -> Company -> Source Object.
+- Added safe integration with Source Object Engine.
+- Added optional Evidence post -> Entity link when an evidence_id exists.
+- Added Knowledge Graph context update after automatic linking.
+- Added Automatic_Evidence_Creation::process() for Discovery Orchestrator runtime.
+- No Trust, Reputation or AI scoring.
+- No frontend changes.
+- No permanent Evidence post creation.
+
+Safety:
+- Runtime link records are stored in storage/runtime/links/.
+- Missing company/source does not fail the pipeline; record is marked needs_review.
+- Knowledge Graph update is context-only and skipped safely when required IDs are missing.

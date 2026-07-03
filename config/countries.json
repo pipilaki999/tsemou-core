@@ -1,0 +1,31 @@
+{
+  "version": "3.0.2",
+  "updated": "2026-07-02",
+  "data": {
+    "US": {
+      "name": "United States",
+      "enabled": true,
+      "priority": 100
+    },
+    "GB": {
+      "name": "United Kingdom",
+      "enabled": true,
+      "priority": 95
+    },
+    "DE": {
+      "name": "Germany",
+      "enabled": true,
+      "priority": 90
+    },
+    "FR": {
+      "name": "France",
+      "enabled": true,
+      "priority": 85
+    },
+    "GR": {
+      "name": "Greece",
+      "enabled": true,
+      "priority": 80
+    }
+  }
+}

@@ -1,0 +1,6 @@
+TSEMOU Core Dev 3.0.11
+
+- Fixes fatal-risk in Automatic Evidence Creation during Phase A pipeline.
+- Adds safe payload normalization for raw evidence records.
+- Adds try/catch recovery around Automatic Evidence runtime execution.
+- Does not add Trust, AI, Reputation, or frontend behavior.

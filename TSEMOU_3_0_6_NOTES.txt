@@ -1,0 +1,21 @@
+TSEMOU Core Dev 3.0.6
+
+Milestone: Runtime Service for Phase A.
+
+Added:
+- Runtime State: STOPPED / RUNNING / PAUSED.
+- Runtime Service controls: Start, Pause, Stop, Runtime Tick.
+- WP-Cron runtime tick with tsemou_minute schedule.
+- Runtime dashboard inside Discovery Orchestrator.
+- Worker loop that processes queue batches while Phase A runtime is RUNNING.
+
+Rules kept:
+- No AI.
+- No Trust Engine.
+- No Reputation.
+- No Phase B logic.
+- No permanent Evidence DB writes.
+
+Test:
+TSEMOU OS -> Discovery Orchestrator -> Start Runtime.
+Expected: Runtime Status RUNNING, jobs processed, logs show Runtime Service tick completed.

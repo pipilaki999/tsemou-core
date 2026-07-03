@@ -1,0 +1,352 @@
+{
+  "version": "1.0",
+  "updated": "2026-06-30",
+  "notes": "Initial safe seed dataset for Company Auto Seed Engine. Expand later from verified sources/connectors.",
+  "companies": [
+    {
+      "official_name": "The Coca-Cola Company",
+      "display_name": "Coca-Cola",
+      "aliases": [
+        "Coca Cola",
+        "Coca-Cola Co."
+      ],
+      "country": "United States",
+      "industry": "Food & Beverage",
+      "website": "https://www.coca-colacompany.com",
+      "headquarters": "Atlanta, Georgia, United States",
+      "founded": 1892,
+      "stock_symbol": "KO",
+      "status": "active"
+    },
+    {
+      "official_name": "Nestlé S.A.",
+      "display_name": "Nestlé",
+      "aliases": [
+        "Nestle"
+      ],
+      "country": "Switzerland",
+      "industry": "Food & Beverage",
+      "website": "https://www.nestle.com",
+      "headquarters": "Vevey, Switzerland",
+      "founded": 1866,
+      "status": "active"
+    },
+    {
+      "official_name": "Apple Inc.",
+      "display_name": "Apple",
+      "aliases": [
+        "Apple Computer"
+      ],
+      "country": "United States",
+      "industry": "Technology",
+      "website": "https://www.apple.com",
+      "headquarters": "Cupertino, California, United States",
+      "founded": 1976,
+      "stock_symbol": "AAPL",
+      "status": "active"
+    },
+    {
+      "official_name": "Microsoft Corporation",
+      "display_name": "Microsoft",
+      "aliases": [
+        "MSFT"
+      ],
+      "country": "United States",
+      "industry": "Technology",
+      "website": "https://www.microsoft.com",
+      "headquarters": "Redmond, Washington, United States",
+      "founded": 1975,
+      "stock_symbol": "MSFT",
+      "status": "active"
+    },
+    {
+      "official_name": "Amazon.com, Inc.",
+      "display_name": "Amazon",
+      "aliases": [
+        "Amazon"
+      ],
+      "country": "United States",
+      "industry": "Retail",
+      "website": "https://www.amazon.com",
+      "headquarters": "Seattle, Washington, United States",
+      "founded": 1994,
+      "stock_symbol": "AMZN",
+      "status": "active"
+    },
+    {
+      "official_name": "Alphabet Inc.",
+      "display_name": "Alphabet / Google",
+      "aliases": [
+        "Google",
+        "Google LLC",
+        "Alphabet"
+      ],
+      "country": "United States",
+      "industry": "Technology",
+      "website": "https://abc.xyz",
+      "headquarters": "Mountain View, California, United States",
+      "founded": 2015,
+      "stock_symbol": "GOOGL",
+      "status": "active"
+    },
+    {
+      "official_name": "Meta Platforms, Inc.",
+      "display_name": "Meta",
+      "aliases": [
+        "Facebook",
+        "Meta Platforms"
+      ],
+      "country": "United States",
+      "industry": "Technology",
+      "website": "https://about.meta.com",
+      "headquarters": "Menlo Park, California, United States",
+      "founded": 2004,
+      "stock_symbol": "META",
+      "status": "active"
+    },
+    {
+      "official_name": "Tesla, Inc.",
+      "display_name": "Tesla",
+      "aliases": [
+        "Tesla Motors"
+      ],
+      "country": "United States",
+      "industry": "Automotive",
+      "website": "https://www.tesla.com",
+      "headquarters": "Austin, Texas, United States",
+      "founded": 2003,
+      "stock_symbol": "TSLA",
+      "status": "active"
+    },
+    {
+      "official_name": "Toyota Motor Corporation",
+      "display_name": "Toyota",
+      "aliases": [
+        "Toyota"
+      ],
+      "country": "Japan",
+      "industry": "Automotive",
+      "website": "https://global.toyota",
+      "headquarters": "Toyota City, Japan",
+      "founded": 1937,
+      "status": "active"
+    },
+    {
+      "official_name": "Volkswagen AG",
+      "display_name": "Volkswagen",
+      "aliases": [
+        "VW",
+        "Volkswagen Group"
+      ],
+      "country": "Germany",
+      "industry": "Automotive",
+      "website": "https://www.volkswagen-group.com",
+      "headquarters": "Wolfsburg, Germany",
+      "founded": 1937,
+      "status": "active"
+    },
+    {
+      "official_name": "Shell plc",
+      "display_name": "Shell",
+      "aliases": [
+        "Royal Dutch Shell"
+      ],
+      "country": "United Kingdom",
+      "industry": "Energy",
+      "website": "https://www.shell.com",
+      "headquarters": "London, United Kingdom",
+      "founded": 1907,
+      "stock_symbol": "SHEL",
+      "status": "active"
+    },
+    {
+      "official_name": "BP p.l.c.",
+      "display_name": "BP",
+      "aliases": [
+        "British Petroleum"
+      ],
+      "country": "United Kingdom",
+      "industry": "Energy",
+      "website": "https://www.bp.com",
+      "headquarters": "London, United Kingdom",
+      "founded": 1909,
+      "stock_symbol": "BP",
+      "status": "active"
+    },
+    {
+      "official_name": "TotalEnergies SE",
+      "display_name": "TotalEnergies",
+      "aliases": [
+        "Total"
+      ],
+      "country": "France",
+      "industry": "Energy",
+      "website": "https://totalenergies.com",
+      "headquarters": "Courbevoie, France",
+      "founded": 1924,
+      "status": "active"
+    },
+    {
+      "official_name": "Samsung Electronics Co., Ltd.",
+      "display_name": "Samsung Electronics",
+      "aliases": [
+        "Samsung"
+      ],
+      "country": "South Korea",
+      "industry": "Technology",
+      "website": "https://www.samsung.com",
+      "headquarters": "Suwon, South Korea",
+      "founded": 1969,
+      "status": "active"
+    },
+    {
+      "official_name": "Sony Group Corporation",
+      "display_name": "Sony",
+      "aliases": [
+        "Sony"
+      ],
+      "country": "Japan",
+      "industry": "Technology",
+      "website": "https://www.sony.com",
+      "headquarters": "Tokyo, Japan",
+      "founded": 1946,
+      "status": "active"
+    },
+    {
+      "official_name": "Nike, Inc.",
+      "display_name": "Nike",
+      "aliases": [
+        "Nike"
+      ],
+      "country": "United States",
+      "industry": "Retail",
+      "website": "https://www.nike.com",
+      "headquarters": "Beaverton, Oregon, United States",
+      "founded": 1964,
+      "stock_symbol": "NKE",
+      "status": "active"
+    },
+    {
+      "official_name": "Adidas AG",
+      "display_name": "Adidas",
+      "aliases": [
+        "adidas"
+      ],
+      "country": "Germany",
+      "industry": "Retail",
+      "website": "https://www.adidas-group.com",
+      "headquarters": "Herzogenaurach, Germany",
+      "founded": 1949,
+      "status": "active"
+    },
+    {
+      "official_name": "Walmart Inc.",
+      "display_name": "Walmart",
+      "aliases": [
+        "Wal-Mart"
+      ],
+      "country": "United States",
+      "industry": "Retail",
+      "website": "https://corporate.walmart.com",
+      "headquarters": "Bentonville, Arkansas, United States",
+      "founded": 1962,
+      "stock_symbol": "WMT",
+      "status": "active"
+    },
+    {
+      "official_name": "JPMorgan Chase & Co.",
+      "display_name": "JPMorgan Chase",
+      "aliases": [
+        "JPMorgan",
+        "Chase"
+      ],
+      "country": "United States",
+      "industry": "Finance",
+      "website": "https://www.jpmorganchase.com",
+      "headquarters": "New York, United States",
+      "founded": 1799,
+      "stock_symbol": "JPM",
+      "status": "active"
+    },
+    {
+      "official_name": "HSBC Holdings plc",
+      "display_name": "HSBC",
+      "aliases": [
+        "HSBC"
+      ],
+      "country": "United Kingdom",
+      "industry": "Finance",
+      "website": "https://www.hsbc.com",
+      "headquarters": "London, United Kingdom",
+      "founded": 1865,
+      "status": "active"
+    },
+    {
+      "official_name": "Pfizer Inc.",
+      "display_name": "Pfizer",
+      "aliases": [
+        "Pfizer"
+      ],
+      "country": "United States",
+      "industry": "Healthcare",
+      "website": "https://www.pfizer.com",
+      "headquarters": "New York, United States",
+      "founded": 1849,
+      "stock_symbol": "PFE",
+      "status": "active"
+    },
+    {
+      "official_name": "Johnson & Johnson",
+      "display_name": "Johnson & Johnson",
+      "aliases": [
+        "J&J"
+      ],
+      "country": "United States",
+      "industry": "Healthcare",
+      "website": "https://www.jnj.com",
+      "headquarters": "New Brunswick, New Jersey, United States",
+      "founded": 1886,
+      "stock_symbol": "JNJ",
+      "status": "active"
+    },
+    {
+      "official_name": "Novartis AG",
+      "display_name": "Novartis",
+      "aliases": [
+        "Novartis"
+      ],
+      "country": "Switzerland",
+      "industry": "Healthcare",
+      "website": "https://www.novartis.com",
+      "headquarters": "Basel, Switzerland",
+      "founded": 1996,
+      "status": "active"
+    },
+    {
+      "official_name": "Siemens AG",
+      "display_name": "Siemens",
+      "aliases": [
+        "Siemens"
+      ],
+      "country": "Germany",
+      "industry": "Manufacturing",
+      "website": "https://www.siemens.com",
+      "headquarters": "Munich, Germany",
+      "founded": 1847,
+      "status": "active"
+    },
+    {
+      "official_name": "Unilever PLC",
+      "display_name": "Unilever",
+      "aliases": [
+        "Unilever"
+      ],
+      "country": "United Kingdom",
+      "industry": "Food & Beverage",
+      "website": "https://www.unilever.com",
+      "headquarters": "London, United Kingdom",
+      "founded": 1929,
+      "status": "active"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "updated": "2026-06-29",
+  "data": {
+    "unverified": {
+      "label": "Unverified",
+      "enabled": true
+    },
+    "partially_verified": {
+      "label": "Partially Verified",
+      "enabled": true
+    },
+    "verified_documents": {
+      "label": "Verified by Documents",
+      "enabled": true
+    },
+    "multiple_sources": {
+      "label": "Multiple Independent Sources",
+      "enabled": true
+    },
+    "government_verified": {
+      "label": "Government Verified",
+      "enabled": true
+    },
+    "court_verified": {
+      "label": "Court Verified",
+      "enabled": true
+    }
+  }
+}

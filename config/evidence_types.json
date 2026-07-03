@@ -1,0 +1,70 @@
+{
+  "version": "1.1",
+  "updated": "2026-06-30",
+  "data": {
+    "court_decision": {
+      "label": "Court Decision",
+      "enabled": true
+    },
+    "court_case": {
+      "label": "Court Case",
+      "enabled": true
+    },
+    "government_report": {
+      "label": "Government Report",
+      "enabled": true
+    },
+    "scientific_study": {
+      "label": "Scientific Study",
+      "enabled": true
+    },
+    "ngo_report": {
+      "label": "NGO Report",
+      "enabled": true
+    },
+    "audit": {
+      "label": "Audit",
+      "enabled": true
+    },
+    "journalistic_investigation": {
+      "label": "Journalistic Investigation",
+      "enabled": true
+    },
+    "former_employee": {
+      "label": "Former Employee / Partner",
+      "enabled": true
+    },
+    "community_report": {
+      "label": "Community Report",
+      "enabled": true
+    },
+    "other": {
+      "label": "Other",
+      "enabled": true
+    },
+    "leadership_decision": {
+      "label": "Leadership Decision",
+      "enabled": true
+    },
+    "political_financing": {
+      "label": "Political Financing / Lobbying",
+      "enabled": true
+    },
+    "omission_failure": {
+      "label": "Omission / Failure to Act",
+      "enabled": true
+    },
+    "sanctions_violation": {
+      "label": "Sanctions Violation",
+      "enabled": true
+    },
+    "war_conflict_link": {
+      "label": "War / Conflict Link",
+      "enabled": true
+    },
+    "humanitarian_action": {
+      "label": "Humanitarian Action",
+      "enabled": true
+    }
+  }
+}

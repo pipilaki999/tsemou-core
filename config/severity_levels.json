@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "updated": "2026-06-29",
+  "data": {
+    "low": {
+      "label": "Low",
+      "enabled": true
+    },
+    "medium": {
+      "label": "Medium",
+      "enabled": true
+    },
+    "high": {
+      "label": "High",
+      "enabled": true
+    },
+    "critical": {
+      "label": "Critical",
+      "enabled": true
+    }
+  }
+}

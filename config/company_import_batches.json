@@ -1,0 +1,492 @@
+{
+  "version": "2.2.2",
+  "updated": "2026-07-01",
+  "batches": {
+    "batch_1_technology_automotive_industrial": [
+      {
+        "official_name": "Apple",
+        "display_name": "Apple",
+        "country": "United States",
+        "industry": "Technology",
+        "website": "https://www.apple.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Microsoft",
+        "display_name": "Microsoft",
+        "country": "United States",
+        "industry": "Technology",
+        "website": "https://www.microsoft.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Alphabet / Google",
+        "display_name": "Alphabet / Google",
+        "country": "United States",
+        "industry": "Technology",
+        "website": "https://abc.xyz",
+        "status": "active"
+      },
+      {
+        "official_name": "Amazon",
+        "display_name": "Amazon",
+        "country": "United States",
+        "industry": "Technology / Retail",
+        "website": "https://www.amazon.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Meta",
+        "display_name": "Meta",
+        "country": "United States",
+        "industry": "Technology / Social Media",
+        "website": "https://about.meta.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Tesla",
+        "display_name": "Tesla",
+        "country": "United States",
+        "industry": "Automotive / Energy",
+        "website": "https://www.tesla.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Samsung Electronics",
+        "display_name": "Samsung Electronics",
+        "country": "South Korea",
+        "industry": "Technology",
+        "website": "https://www.samsung.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Sony",
+        "display_name": "Sony",
+        "country": "Japan",
+        "industry": "Technology / Entertainment",
+        "website": "https://www.sony.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Toyota",
+        "display_name": "Toyota",
+        "country": "Japan",
+        "industry": "Automotive",
+        "website": "https://global.toyota",
+        "status": "active"
+      },
+      {
+        "official_name": "Volkswagen Group",
+        "display_name": "Volkswagen Group",
+        "country": "Germany",
+        "industry": "Automotive",
+        "website": "https://www.volkswagen-group.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Mercedes-Benz",
+        "display_name": "Mercedes-Benz",
+        "country": "Germany",
+        "industry": "Automotive",
+        "website": "https://group.mercedes-benz.com",
+        "status": "active"
+      },
+      {
+        "official_name": "BMW",
+        "display_name": "BMW",
+        "country": "Germany",
+        "industry": "Automotive",
+        "website": "https://www.bmwgroup.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Ford",
+        "display_name": "Ford",
+        "country": "United States",
+        "industry": "Automotive",
+        "website": "https://www.ford.com",
+        "status": "active"
+      },
+      {
+        "official_name": "General Motors",
+        "display_name": "General Motors",
+        "country": "United States",
+        "industry": "Automotive",
+        "website": "https://www.gm.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Stellantis",
+        "display_name": "Stellantis",
+        "country": "Netherlands",
+        "industry": "Automotive",
+        "website": "https://www.stellantis.com",
+        "status": "active"
+      },
+      {
+        "official_name": "BYD",
+        "display_name": "BYD",
+        "country": "China",
+        "industry": "Automotive / Energy",
+        "website": "https://www.bydglobal.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Siemens",
+        "display_name": "Siemens",
+        "country": "Germany",
+        "industry": "Industrial Technology",
+        "website": "https://www.siemens.com",
+        "status": "active"
+      },
+      {
+        "official_name": "General Electric",
+        "display_name": "General Electric",
+        "country": "United States",
+        "industry": "Industrial",
+        "website": "https://www.ge.com",
+        "status": "active"
+      },
+      {
+        "official_name": "3M",
+        "display_name": "3M",
+        "country": "United States",
+        "industry": "Industrial / Consumer Products",
+        "website": "https://www.3m.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Honeywell",
+        "display_name": "Honeywell",
+        "country": "United States",
+        "industry": "Industrial Technology",
+        "website": "https://www.honeywell.com",
+        "status": "active"
+      }
+    ],
+    "batch_2_retail_apparel_luxury": [
+      {
+        "official_name": "Walmart",
+        "display_name": "Walmart",
+        "country": "United States",
+        "industry": "Retail",
+        "website": "https://corporate.walmart.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Costco",
+        "display_name": "Costco",
+        "country": "United States",
+        "industry": "Retail",
+        "website": "https://www.costco.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Target",
+        "display_name": "Target",
+        "country": "United States",
+        "industry": "Retail",
+        "website": "https://corporate.target.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Home Depot",
+        "display_name": "Home Depot",
+        "country": "United States",
+        "industry": "Retail",
+        "website": "https://corporate.homedepot.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Lowe's",
+        "display_name": "Lowe's",
+        "country": "United States",
+        "industry": "Retail",
+        "website": "https://corporate.lowes.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Carrefour",
+        "display_name": "Carrefour",
+        "country": "France",
+        "industry": "Retail",
+        "website": "https://www.carrefour.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Tesco",
+        "display_name": "Tesco",
+        "country": "United Kingdom",
+        "industry": "Retail",
+        "website": "https://www.tescoplc.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Aldi",
+        "display_name": "Aldi",
+        "country": "Germany",
+        "industry": "Retail",
+        "website": "https://www.aldi.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Lidl",
+        "display_name": "Lidl",
+        "country": "Germany",
+        "industry": "Retail",
+        "website": "https://www.lidl.com",
+        "status": "active"
+      },
+      {
+        "official_name": "IKEA",
+        "display_name": "IKEA",
+        "country": "Netherlands",
+        "industry": "Retail / Furniture",
+        "website": "https://www.ikea.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Nike",
+        "display_name": "Nike",
+        "country": "United States",
+        "industry": "Apparel",
+        "website": "https://www.nike.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Adidas",
+        "display_name": "Adidas",
+        "country": "Germany",
+        "industry": "Apparel",
+        "website": "https://www.adidas-group.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Puma",
+        "display_name": "Puma",
+        "country": "Germany",
+        "industry": "Apparel",
+        "website": "https://about.puma.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Shein",
+        "display_name": "Shein",
+        "country": "Singapore",
+        "industry": "Fashion / Retail",
+        "website": "https://www.sheingroup.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Uniqlo / Fast Retailing",
+        "display_name": "Uniqlo / Fast Retailing",
+        "country": "Japan",
+        "industry": "Retail / Apparel",
+        "website": "https://www.fastretailing.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Gap Inc.",
+        "display_name": "Gap Inc.",
+        "country": "United States",
+        "industry": "Retail / Apparel",
+        "website": "https://www.gapinc.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Primark",
+        "display_name": "Primark",
+        "country": "Ireland",
+        "industry": "Retail / Apparel",
+        "website": "https://www.primark.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Hermès",
+        "display_name": "Hermès",
+        "country": "France",
+        "industry": "Luxury",
+        "website": "https://www.hermes.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Chanel",
+        "display_name": "Chanel",
+        "country": "United Kingdom",
+        "industry": "Luxury",
+        "website": "https://www.chanel.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Prada",
+        "display_name": "Prada",
+        "country": "Italy",
+        "industry": "Luxury",
+        "website": "https://www.pradagroup.com",
+        "status": "active"
+      }
+    ],
+    "batch_3_energy_mining_food": [
+      {
+        "official_name": "Shell",
+        "display_name": "Shell",
+        "country": "United Kingdom",
+        "industry": "Energy",
+        "website": "https://www.shell.com",
+        "status": "active"
+      },
+      {
+        "official_name": "BP",
+        "display_name": "BP",
+        "country": "United Kingdom",
+        "industry": "Energy",
+        "website": "https://www.bp.com",
+        "status": "active"
+      },
+      {
+        "official_name": "TotalEnergies",
+        "display_name": "TotalEnergies",
+        "country": "France",
+        "industry": "Energy",
+        "website": "https://totalenergies.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Equinor",
+        "display_name": "Equinor",
+        "country": "Norway",
+        "industry": "Energy",
+        "website": "https://www.equinor.com",
+        "status": "active"
+      },
+      {
+        "official_name": "ConocoPhillips",
+        "display_name": "ConocoPhillips",
+        "country": "United States",
+        "industry": "Energy",
+        "website": "https://www.conocophillips.com",
+        "status": "active"
+      },
+      {
+        "official_name": "PetroChina",
+        "display_name": "PetroChina",
+        "country": "China",
+        "industry": "Energy",
+        "website": "https://www.petrochina.com.cn",
+        "status": "active"
+      },
+      {
+        "official_name": "Sinopec",
+        "display_name": "Sinopec",
+        "country": "China",
+        "industry": "Energy",
+        "website": "https://www.sinopec.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Vale",
+        "display_name": "Vale",
+        "country": "Brazil",
+        "industry": "Mining",
+        "website": "https://www.vale.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Anglo American",
+        "display_name": "Anglo American",
+        "country": "United Kingdom",
+        "industry": "Mining",
+        "website": "https://www.angloamerican.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Freeport-McMoRan",
+        "display_name": "Freeport-McMoRan",
+        "country": "United States",
+        "industry": "Mining",
+        "website": "https://www.fcx.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Barrick Gold",
+        "display_name": "Barrick Gold",
+        "country": "Canada",
+        "industry": "Mining",
+        "website": "https://www.barrick.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Newmont",
+        "display_name": "Newmont",
+        "country": "United States",
+        "industry": "Mining",
+        "website": "https://www.newmont.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Cargill",
+        "display_name": "Cargill",
+        "country": "United States",
+        "industry": "Agriculture / Food",
+        "website": "https://www.cargill.com",
+        "status": "active"
+      },
+      {
+        "official_name": "ADM",
+        "display_name": "ADM",
+        "country": "United States",
+        "industry": "Agriculture / Food",
+        "website": "https://www.adm.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Bunge",
+        "display_name": "Bunge",
+        "country": "Switzerland",
+        "industry": "Agriculture / Food",
+        "website": "https://www.bunge.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Louis Dreyfus Company",
+        "display_name": "Louis Dreyfus Company",
+        "country": "Netherlands",
+        "industry": "Agriculture / Food",
+        "website": "https://www.ldc.com",
+        "status": "active"
+      },
+      {
+        "official_name": "JBS",
+        "display_name": "JBS",
+        "country": "Brazil",
+        "industry": "Food / Meat Processing",
+        "website": "https://jbs.com.br",
+        "status": "active"
+      },
+      {
+        "official_name": "Tyson Foods",
+        "display_name": "Tyson Foods",
+        "country": "United States",
+        "industry": "Food / Meat Processing",
+        "website": "https://www.tysonfoods.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Danone",
+        "display_name": "Danone",
+        "country": "France",
+        "industry": "Food & Beverage",
+        "website": "https://www.danone.com",
+        "status": "active"
+      },
+      {
+        "official_name": "Unilever",
+        "display_name": "Unilever",
+        "country": "United Kingdom",
+        "industry": "Consumer Goods",
+        "website": "https://www.unilever.com",
+        "status": "active"
+      }
+    ]
+  }
+}

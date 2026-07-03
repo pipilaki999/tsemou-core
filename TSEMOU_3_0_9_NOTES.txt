@@ -1,0 +1,19 @@
+TSEMOU Core Dev 3.0.9
+
+Milestone: TSEMOU OS Admin Menu Refactor.
+
+Changes:
+- Central late admin menu cleanup for TSEMOU OS.
+- Removes duplicate visible submenu entries such as Knowledge Graph and Company Intelligence.
+- Keeps module page callbacks intact; only duplicate menu rows are deduplicated.
+- Reorders TSEMOU OS modules into stable Phase A / Phase B / Developer style labels.
+- No frontend changes.
+- No runtime queue changes.
+- No database migrations.
+
+Safe install path:
+1. Deactivate current TSEMOU Core Dev.
+2. Upload 3.0.9 ZIP.
+3. Replace current with uploaded.
+4. Activate.
+5. Check TSEMOU OS menu for duplicate rows.

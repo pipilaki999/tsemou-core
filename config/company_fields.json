@@ -1,0 +1,50 @@
+{
+  "version": "1.0",
+  "updated": "2026-06-29",
+  "data": {
+    "identity": [
+      "official_name",
+      "display_name",
+      "aliases",
+      "country",
+      "industry",
+      "sub_industry"
+    ],
+    "profile": [
+      "website",
+      "logo",
+      "headquarters",
+      "employees",
+      "founded",
+      "stock_symbol",
+      "isin",
+      "registration_number"
+    ],
+    "graph": [
+      "parent_company",
+      "subsidiaries",
+      "brands"
+    ],
+    "discovery": [
+      "source",
+      "source_type",
+      "discovery_date",
+      "last_scan",
+      "next_scan",
+      "scan_count",
+      "priority_score",
+      "wave",
+      "rank_band",
+      "confidence",
+      "status"
+    ],
+    "pipeline": [
+      "company_profile",
+      "historical_import",
+      "evidence_discovery",
+      "trust_ready",
+      "community_ready",
+      "graph_ready"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "updated": "2026-06-29",
+  "data": {
+    "el": {
+      "label": "Greek",
+      "enabled": true
+    },
+    "en": {
+      "label": "English",
+      "enabled": true
+    },
+    "de": {
+      "label": "German",
+      "enabled": true
+    },
+    "ja": {
+      "label": "Japanese",
+      "enabled": true
+    }
+  }
+}

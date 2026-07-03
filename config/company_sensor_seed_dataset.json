@@ -1,0 +1,374 @@
+{
+  "version": "2.0",
+  "updated": "2026-06-30",
+  "companies": [
+    {
+      "official_name": "McDonald's Corporation",
+      "display_name": "McDonald's",
+      "country": "United States",
+      "industry": "Food & Beverage",
+      "website": "https://corporate.mcdonalds.com",
+      "headquarters": "Chicago, Illinois, United States",
+      "founded": 1940,
+      "stock_symbol": "MCD",
+      "status": "active"
+    },
+    {
+      "official_name": "Starbucks Corporation",
+      "display_name": "Starbucks",
+      "country": "United States",
+      "industry": "Food & Beverage",
+      "website": "https://www.starbucks.com",
+      "headquarters": "Seattle, Washington, United States",
+      "founded": 1971,
+      "stock_symbol": "SBUX",
+      "status": "active"
+    },
+    {
+      "official_name": "PepsiCo, Inc.",
+      "display_name": "PepsiCo",
+      "country": "United States",
+      "industry": "Food & Beverage",
+      "website": "https://www.pepsico.com",
+      "headquarters": "Purchase, New York, United States",
+      "founded": 1965,
+      "stock_symbol": "PEP",
+      "status": "active"
+    },
+    {
+      "official_name": "The Procter & Gamble Company",
+      "display_name": "Procter & Gamble",
+      "country": "United States",
+      "industry": "Consumer Products",
+      "website": "https://www.pg.com",
+      "headquarters": "Cincinnati, Ohio, United States",
+      "founded": 1837,
+      "stock_symbol": "PG",
+      "status": "active"
+    },
+    {
+      "official_name": "The Walt Disney Company",
+      "display_name": "Disney",
+      "country": "United States",
+      "industry": "Media",
+      "website": "https://thewaltdisneycompany.com",
+      "headquarters": "Burbank, California, United States",
+      "founded": 1923,
+      "stock_symbol": "DIS",
+      "status": "active"
+    },
+    {
+      "official_name": "Netflix, Inc.",
+      "display_name": "Netflix",
+      "country": "United States",
+      "industry": "Media",
+      "website": "https://www.netflix.com",
+      "headquarters": "Los Gatos, California, United States",
+      "founded": 1997,
+      "stock_symbol": "NFLX",
+      "status": "active"
+    },
+    {
+      "official_name": "The Boeing Company",
+      "display_name": "Boeing",
+      "country": "United States",
+      "industry": "Manufacturing",
+      "website": "https://www.boeing.com",
+      "headquarters": "Arlington, Virginia, United States",
+      "founded": 1916,
+      "stock_symbol": "BA",
+      "status": "active"
+    },
+    {
+      "official_name": "Airbus SE",
+      "display_name": "Airbus",
+      "country": "Netherlands",
+      "industry": "Manufacturing",
+      "website": "https://www.airbus.com",
+      "headquarters": "Leiden, Netherlands",
+      "founded": 1970,
+      "status": "active"
+    },
+    {
+      "official_name": "Exxon Mobil Corporation",
+      "display_name": "ExxonMobil",
+      "country": "United States",
+      "industry": "Energy",
+      "website": "https://corporate.exxonmobil.com",
+      "headquarters": "Spring, Texas, United States",
+      "founded": 1999,
+      "stock_symbol": "XOM",
+      "status": "active"
+    },
+    {
+      "official_name": "Chevron Corporation",
+      "display_name": "Chevron",
+      "country": "United States",
+      "industry": "Energy",
+      "website": "https://www.chevron.com",
+      "headquarters": "San Ramon, California, United States",
+      "founded": 1879,
+      "stock_symbol": "CVX",
+      "status": "active"
+    },
+    {
+      "official_name": "Saudi Arabian Oil Company",
+      "display_name": "Saudi Aramco",
+      "country": "Saudi Arabia",
+      "industry": "Energy",
+      "website": "https://www.aramco.com",
+      "headquarters": "Dhahran, Saudi Arabia",
+      "founded": 1933,
+      "status": "active"
+    },
+    {
+      "official_name": "Glencore plc",
+      "display_name": "Glencore",
+      "country": "Switzerland",
+      "industry": "Mining",
+      "website": "https://www.glencore.com",
+      "headquarters": "Baar, Switzerland",
+      "founded": 1974,
+      "status": "active"
+    },
+    {
+      "official_name": "Rio Tinto Group",
+      "display_name": "Rio Tinto",
+      "country": "United Kingdom",
+      "industry": "Mining",
+      "website": "https://www.riotinto.com",
+      "headquarters": "London, United Kingdom",
+      "founded": 1873,
+      "status": "active"
+    },
+    {
+      "official_name": "BHP Group Limited",
+      "display_name": "BHP",
+      "country": "Australia",
+      "industry": "Mining",
+      "website": "https://www.bhp.com",
+      "headquarters": "Melbourne, Australia",
+      "founded": 1885,
+      "status": "active"
+    },
+    {
+      "official_name": "BlackRock, Inc.",
+      "display_name": "BlackRock",
+      "country": "United States",
+      "industry": "Finance",
+      "website": "https://www.blackrock.com",
+      "headquarters": "New York, United States",
+      "founded": 1988,
+      "stock_symbol": "BLK",
+      "status": "active"
+    },
+    {
+      "official_name": "The Goldman Sachs Group, Inc.",
+      "display_name": "Goldman Sachs",
+      "country": "United States",
+      "industry": "Finance",
+      "website": "https://www.goldmansachs.com",
+      "headquarters": "New York, United States",
+      "founded": 1869,
+      "stock_symbol": "GS",
+      "status": "active"
+    },
+    {
+      "official_name": "Morgan Stanley",
+      "display_name": "Morgan Stanley",
+      "country": "United States",
+      "industry": "Finance",
+      "website": "https://www.morganstanley.com",
+      "headquarters": "New York, United States",
+      "founded": 1935,
+      "stock_symbol": "MS",
+      "status": "active"
+    },
+    {
+      "official_name": "Deutsche Bank AG",
+      "display_name": "Deutsche Bank",
+      "country": "Germany",
+      "industry": "Finance",
+      "website": "https://www.db.com",
+      "headquarters": "Frankfurt, Germany",
+      "founded": 1870,
+      "status": "active"
+    },
+    {
+      "official_name": "Tencent Holdings Ltd.",
+      "display_name": "Tencent",
+      "country": "China",
+      "industry": "Technology",
+      "website": "https://www.tencent.com",
+      "headquarters": "Shenzhen, China",
+      "founded": 1998,
+      "status": "active"
+    },
+    {
+      "official_name": "Alibaba Group Holding Limited",
+      "display_name": "Alibaba",
+      "country": "China",
+      "industry": "Technology",
+      "website": "https://www.alibabagroup.com",
+      "headquarters": "Hangzhou, China",
+      "founded": 1999,
+      "status": "active"
+    },
+    {
+      "official_name": "Taiwan Semiconductor Manufacturing Company Limited",
+      "display_name": "TSMC",
+      "country": "Taiwan",
+      "industry": "Technology",
+      "website": "https://www.tsmc.com",
+      "headquarters": "Hsinchu, Taiwan",
+      "founded": 1987,
+      "status": "active"
+    },
+    {
+      "official_name": "NVIDIA Corporation",
+      "display_name": "NVIDIA",
+      "country": "United States",
+      "industry": "Technology",
+      "website": "https://www.nvidia.com",
+      "headquarters": "Santa Clara, California, United States",
+      "founded": 1993,
+      "stock_symbol": "NVDA",
+      "status": "active"
+    },
+    {
+      "official_name": "Intel Corporation",
+      "display_name": "Intel",
+      "country": "United States",
+      "industry": "Technology",
+      "website": "https://www.intel.com",
+      "headquarters": "Santa Clara, California, United States",
+      "founded": 1968,
+      "stock_symbol": "INTC",
+      "status": "active"
+    },
+    {
+      "official_name": "Oracle Corporation",
+      "display_name": "Oracle",
+      "country": "United States",
+      "industry": "Technology",
+      "website": "https://www.oracle.com",
+      "headquarters": "Austin, Texas, United States",
+      "founded": 1977,
+      "stock_symbol": "ORCL",
+      "status": "active"
+    },
+    {
+      "official_name": "IBM Corporation",
+      "display_name": "IBM",
+      "country": "United States",
+      "industry": "Technology",
+      "website": "https://www.ibm.com",
+      "headquarters": "Armonk, New York, United States",
+      "founded": 1911,
+      "stock_symbol": "IBM",
+      "status": "active"
+    },
+    {
+      "official_name": "Bayer AG",
+      "display_name": "Bayer",
+      "country": "Germany",
+      "industry": "Healthcare",
+      "website": "https://www.bayer.com",
+      "headquarters": "Leverkusen, Germany",
+      "founded": 1863,
+      "status": "active"
+    },
+    {
+      "official_name": "Roche Holding AG",
+      "display_name": "Roche",
+      "country": "Switzerland",
+      "industry": "Healthcare",
+      "website": "https://www.roche.com",
+      "headquarters": "Basel, Switzerland",
+      "founded": 1896,
+      "status": "active"
+    },
+    {
+      "official_name": "Sanofi S.A.",
+      "display_name": "Sanofi",
+      "country": "France",
+      "industry": "Healthcare",
+      "website": "https://www.sanofi.com",
+      "headquarters": "Paris, France",
+      "founded": 1973,
+      "status": "active"
+    },
+    {
+      "official_name": "AstraZeneca plc",
+      "display_name": "AstraZeneca",
+      "country": "United Kingdom",
+      "industry": "Healthcare",
+      "website": "https://www.astrazeneca.com",
+      "headquarters": "Cambridge, United Kingdom",
+      "founded": 1999,
+      "status": "active"
+    },
+    {
+      "official_name": "H&M Hennes & Mauritz AB",
+      "display_name": "H&M",
+      "country": "Sweden",
+      "industry": "Retail",
+      "website": "https://hmgroup.com",
+      "headquarters": "Stockholm, Sweden",
+      "founded": 1947,
+      "status": "active"
+    },
+    {
+      "official_name": "Inditex S.A.",
+      "display_name": "Inditex / Zara",
+      "country": "Spain",
+      "industry": "Retail",
+      "website": "https://www.inditex.com",
+      "headquarters": "Arteixo, Spain",
+      "founded": 1985,
+      "status": "active"
+    },
+    {
+      "official_name": "LVMH Moët Hennessy Louis Vuitton SE",
+      "display_name": "LVMH",
+      "country": "France",
+      "industry": "Luxury",
+      "website": "https://www.lvmh.com",
+      "headquarters": "Paris, France",
+      "founded": 1987,
+      "status": "active"
+    },
+    {
+      "official_name": "Maersk A/S",
+      "display_name": "Maersk",
+      "country": "Denmark",
+      "industry": "Transport",
+      "website": "https://www.maersk.com",
+      "headquarters": "Copenhagen, Denmark",
+      "founded": 1904,
+      "status": "active"
+    },
+    {
+      "official_name": "Uber Technologies, Inc.",
+      "display_name": "Uber",
+      "country": "United States",
+      "industry": "Transport",
+      "website": "https://www.uber.com",
+      "headquarters": "San Francisco, California, United States",
+      "founded": 2009,
+      "stock_symbol": "UBER",
+      "status": "active"
+    },
+    {
+      "official_name": "Airbnb, Inc.",
+      "display_name": "Airbnb",
+      "country": "United States",
+      "industry": "Travel",
+      "website": "https://www.airbnb.com",
+      "headquarters": "San Francisco, California, United States",
+      "founded": 2008,
+      "stock_symbol": "ABNB",
+      "status": "active"
+    }
+  ]
+}

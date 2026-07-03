@@ -1,0 +1,42 @@
+{
+  "version": "1.0",
+  "updated": "2026-06-29",
+  "data": {
+    "not_legal": {
+      "label": "Not Legal",
+      "enabled": true
+    },
+    "allegation": {
+      "label": "Allegation",
+      "enabled": true
+    },
+    "under_investigation": {
+      "label": "Under Investigation",
+      "enabled": true
+    },
+    "charges_filed": {
+      "label": "Charges Filed",
+      "enabled": true
+    },
+    "court_case": {
+      "label": "Court Case",
+      "enabled": true
+    },
+    "convicted": {
+      "label": "Convicted",
+      "enabled": true
+    },
+    "appeal_pending": {
+      "label": "Appeal Pending",
+      "enabled": true
+    },
+    "cleared": {
+      "label": "Cleared",
+      "enabled": true
+    },
+    "dismissed": {
+      "label": "Dismissed",
+      "enabled": true
+    }
+  }
+}

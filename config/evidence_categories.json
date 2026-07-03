@@ -1,0 +1,53 @@
+{
+  "version": "1.1",
+  "updated": "2026-06-30",
+  "data": {
+    "environment": {
+      "label": "Environment",
+      "enabled": true
+    },
+    "workers": {
+      "label": "Workers",
+      "enabled": true
+    },
+    "human_rights": {
+      "label": "Human Rights",
+      "enabled": true
+    },
+    "ethics": {
+      "label": "Ethics",
+      "enabled": true
+    },
+    "transparency": {
+      "label": "Transparency",
+      "enabled": true
+    },
+    "consumer_safety": {
+      "label": "Consumer Safety",
+      "enabled": true
+    },
+    "tax_corruption": {
+      "label": "Tax / Corruption",
+      "enabled": true
+    },
+    "animals": {
+      "label": "Animal Welfare",
+      "enabled": true
+    },
+    "leadership_influence": {
+      "label": "Leadership & Influence",
+      "enabled": true,
+      "notes": "Leadership actions, financing, lobbying or public decisions with documented social impact."
+    },
+    "responsibility_omission": {
+      "label": "Responsibility / Omission",
+      "enabled": true,
+      "notes": "Documented failure to act when responsibility, knowledge or duty existed."
+    },
+    "war_conflict": {
+      "label": "War & Conflict",
+      "enabled": true,
+      "notes": "Documented links to war, sanctions, weapons, occupation, crimes, forced displacement or humanitarian harm."
+    }
+  }
+}

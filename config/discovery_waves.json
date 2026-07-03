@@ -1,0 +1,24 @@
+{
+  "version": "3.0.2",
+  "updated": "2026-07-02",
+  "data": {
+    "wave_1": {
+      "label": "Wave 1",
+      "enabled": true,
+      "rank_band": "top_1_50",
+      "priority": 100
+    },
+    "wave_2": {
+      "label": "Wave 2",
+      "enabled": true,
+      "rank_band": "top_51_200",
+      "priority": 75
+    },
+    "wave_3": {
+      "label": "Wave 3",
+      "enabled": true,
+      "rank_band": "regional_targets",
+      "priority": 50
+    }
+  }
+}

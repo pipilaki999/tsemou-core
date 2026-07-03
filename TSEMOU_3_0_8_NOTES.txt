@@ -1,0 +1,6 @@
+TSEMOU 3.0.8
+Safe recovery build after 3.0.7 activation crash.
+- Fixed fatal activation error: Automatic_Evidence_Creation was called with ::instance() but the class did not define instance().
+- Added safe module boot checks in Core before calling module instance().
+- Added minimal Automatic Evidence admin submenu and draft listing.
+- Added writable-storage guard for runtime evidence drafts.

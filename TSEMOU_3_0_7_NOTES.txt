@@ -1,0 +1,5 @@
+TSEMOU 3.0.7
+Automatic Evidence Creation milestone
+- Runtime evidence draft storage introduced
+- No DB persistence
+- Phase A only
