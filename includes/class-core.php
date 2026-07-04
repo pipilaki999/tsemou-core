@@ -52,6 +52,8 @@ class Core {
         require_once TSEMOU_CORE_PATH . 'modules/event-timeline/class-event-timeline-node.php';
         require_once TSEMOU_CORE_PATH . 'modules/event-timeline/class-event-sequence.php';
         require_once TSEMOU_CORE_PATH . 'modules/event-timeline/class-event-timeline.php';
+        require_once TSEMOU_CORE_PATH . 'modules/event-intelligence/class-event-intelligence-result.php';
+        require_once TSEMOU_CORE_PATH . 'modules/event-intelligence/class-event-intelligence-orchestrator.php';
         require_once TSEMOU_CORE_PATH . 'modules/story/class-story-module.php';
         require_once TSEMOU_CORE_PATH . 'modules/trust-engine/class-trust-engine.php';
         if (class_exists('\TSEMOU\Modules\ConfigurationOS\Configuration_OS') && method_exists('\TSEMOU\Modules\ConfigurationOS\Configuration_OS', 'instance')) { \TSEMOU\Modules\ConfigurationOS\Configuration_OS::instance(); }
@@ -79,6 +81,7 @@ class Core {
         if (class_exists('\TSEMOU\Modules\EventIdentity\Event_Identity_Engine') && method_exists('\TSEMOU\Modules\EventIdentity\Event_Identity_Engine', 'instance')) { \TSEMOU\Modules\EventIdentity\Event_Identity_Engine::instance(); }
         if (class_exists('\TSEMOU\Modules\EventResolver\Event_Resolver') && method_exists('\TSEMOU\Modules\EventResolver\Event_Resolver', 'instance')) { \TSEMOU\Modules\EventResolver\Event_Resolver::instance(); }
         if (class_exists('\TSEMOU\Modules\EventTimeline\Event_Timeline') && method_exists('\TSEMOU\Modules\EventTimeline\Event_Timeline', 'instance')) { \TSEMOU\Modules\EventTimeline\Event_Timeline::instance(); }
+        if (class_exists('\TSEMOU\Modules\EventIntelligence\Event_Intelligence_Orchestrator') && method_exists('\TSEMOU\Modules\EventIntelligence\Event_Intelligence_Orchestrator', 'instance')) { \TSEMOU\Modules\EventIntelligence\Event_Intelligence_Orchestrator::instance(); }
         if (class_exists('\TSEMOU\Modules\Story\Story_Module') && method_exists('\TSEMOU\Modules\Story\Story_Module', 'instance')) { \TSEMOU\Modules\Story\Story_Module::instance(); }
         if (class_exists('\TSEMOU\Modules\TrustEngine\Trust_Engine') && method_exists('\TSEMOU\Modules\TrustEngine\Trust_Engine', 'instance')) { \TSEMOU\Modules\TrustEngine\Trust_Engine::instance(); }
     }

@@ -53,3 +53,9 @@ require_once dirname(__DIR__) . '/modules/event-resolver/class-event-resolver.ph
 require_once dirname(__DIR__) . '/modules/event-timeline/class-event-timeline-node.php';
 require_once dirname(__DIR__) . '/modules/event-timeline/class-event-sequence.php';
 require_once dirname(__DIR__) . '/modules/event-timeline/class-event-timeline.php';
+require_once dirname(__DIR__) . '/modules/evidence-engine/class-evidence-engine.php';
+require_once dirname(__DIR__) . '/modules/policy-engine/class-policy-engine.php';
+require_once dirname(__DIR__) . '/modules/source-discovery/class-source-discovery.php';
+require_once dirname(__DIR__) . '/modules/knowledge-graph/class-knowledge-graph.php';
+require_once dirname(__DIR__) . '/modules/event-intelligence/class-event-intelligence-result.php';
+require_once dirname(__DIR__) . '/modules/event-intelligence/class-event-intelligence-orchestrator.php';
