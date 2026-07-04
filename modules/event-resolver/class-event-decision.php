@@ -17,29 +17,32 @@ class Event_Decision {
         $this->reason = (string) $reason;
     }
 
-    public static function from_payload($payload = []) {
+    public static function from_payload($payload = [], $existing_record = null) {
         $payload = is_array($payload) ? $payload : [];
-        $has_signature = !empty($payload['signature']);
         $has_story_id = !empty($payload['story_id']);
         $has_existing = !empty($payload['existing_event']);
+        $has_correction = !empty($payload['correction']);
 
-        if ($has_signature && $has_existing) {
+        if ($has_correction) {
+            return new self('CORRECTION', 0.9, 'Correction flag detected in incoming payload.');
+        }
+
+        if ($has_existing) {
             return new self('MERGE', 0.94, 'Existing event signature and incoming payload indicate a merge candidate.');
         }
 
-        if ($has_signature) {
-            $existing = IdentityRepository::find_by_signature($payload['signature']);
-            if ($existing) {
-                return new self('DUPLICATE', 0.95, 'Deterministic signature already exists in the repository.');
-            }
+        $signature = Event_Signature::build($payload);
+        $existing = $existing_record;
+        if ($existing === null && $signature !== '') {
+            $existing = IdentityRepository::find_by_signature($signature);
+        }
+
+        if ($existing) {
+            return new self('DUPLICATE', 0.95, 'Deterministic signature already exists in the repository.');
         }
 
         if ($has_story_id) {
             return new self('UPDATE', 0.72, 'Story context exists, so the event should be treated as an update candidate.');
-        }
-
-        if (!empty($payload['correction'])) {
-            return new self('CORRECTION', 0.9, 'Correction flag detected in incoming payload.');
         }
 
         $title = trim((string) ($payload['title'] ?? ($payload['name'] ?? '')));

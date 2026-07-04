@@ -1,4 +1,7 @@
 <?php
+require_once __DIR__ . '/bootstrap.php';
+
+use TSEMOU\Modules\EventIdentity\IdentityRepository;
 use TSEMOU\Modules\EventResolver\Event_Decision;
 use TSEMOU\Modules\EventResolver\Event_Merge;
 use TSEMOU\Modules\EventResolver\Event_Resolver;
@@ -10,8 +13,15 @@ class EventResolverTest extends \PHPUnit\Framework\TestCase {
         $this->assertSame('NEW_EVENT', $decision->action);
     }
 
-    public function test_duplicate_is_detected_from_signature() {
-        $decision = Event_Decision::from_payload(['signature' => 'identity_test_001']);
+    public function test_duplicate_is_detected_from_repository_signature() {
+        IdentityRepository::save([
+            'signature' => 'identity_test_duplicate',
+            'canonical_name' => 'Acme investigation',
+            'aliases' => ['Acme investigation'],
+            'payload' => ['title' => 'Acme investigation', 'company' => 'Acme', 'event_type' => 'legal'],
+        ]);
+
+        $decision = Event_Decision::from_payload(['title' => 'Acme investigation'], IdentityRepository::find_by_signature('identity_test_duplicate'));
         $this->assertSame('DUPLICATE', $decision->action);
     }
 

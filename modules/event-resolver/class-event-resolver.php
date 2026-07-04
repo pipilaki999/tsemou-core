@@ -22,19 +22,22 @@ class Event_Resolver {
 
     public function resolve($input = []) {
         $payload = is_array($input) ? $input : [];
-        $decision = Event_Decision::from_payload($payload);
-        $similarity = Event_Similarity::score($payload, $payload);
+        $signature = Event_Signature::build($payload);
+        $repository = $signature !== '' ? IdentityRepository::find_by_signature($signature) : null;
+        $existing_payload = is_array($repository['payload'] ?? null) ? $repository['payload'] : [];
+        $similarity = Event_Similarity::score($payload, $existing_payload);
 
-        if ($decision->action === 'NEW_EVENT' && $similarity >= 0.95) {
-            $decision->action = 'DUPLICATE';
+        $decision = Event_Decision::from_payload($payload, $repository);
+
+        if ($decision->action === 'NEW_EVENT' && $similarity >= 0.85) {
+            $decision->action = 'MERGE';
+            $decision->confidence = 0.9;
         }
 
         if ($decision->action === 'UPDATE' && $decision->confidence >= 0.85) {
             $decision->action = 'CORRECTION';
         }
 
-        $signature = Event_Signature::build($payload);
-        $repository = IdentityRepository::find_by_signature($signature);
         if ($repository && $decision->action === 'NEW_EVENT') {
             $decision->action = 'DUPLICATE';
             $decision->confidence = 0.95;

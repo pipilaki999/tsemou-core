@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/bootstrap.php';
+
 use TSEMOU\Modules\EventTimeline\Event_Timeline;
 
 class EventTimelineTest extends \PHPUnit\Framework\TestCase {
@@ -14,6 +16,7 @@ class EventTimelineTest extends \PHPUnit\Framework\TestCase {
         $this->assertArrayHasKey('timeline', $timeline);
         $this->assertArrayHasKey('nodes', $timeline);
         $this->assertSame('first_report', $timeline['nodes'][0]['action']);
+        $this->assertSame('evt-1', $timeline['event_id']);
     }
 
     public function test_sequence_groups_nodes_by_event_id() {
@@ -26,5 +29,6 @@ class EventTimelineTest extends \PHPUnit\Framework\TestCase {
         ]);
 
         $this->assertArrayHasKey('evt-1', $timeline['timeline']);
+        $this->assertCount(1, $timeline['timeline']['evt-1']);
     }
 }

@@ -162,7 +162,7 @@ Purpose:
 Responsibilities:
 - Reuse the Event Identity Engine, Signature Engine, and Repository.
 - Evaluate similarity and merge readiness without AI or LLM inference.
-- Return a deterministic resolver decision and confidence score.
+- Return a deterministic resolver decision and confidence score grounded in repository-backed identity state.
 
 ### 2.11 Event_Timeline
 Purpose:
