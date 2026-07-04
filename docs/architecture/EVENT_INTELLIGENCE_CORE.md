@@ -164,6 +164,16 @@ Responsibilities:
 - Evaluate similarity and merge readiness without AI or LLM inference.
 - Return a deterministic resolver decision and confidence score.
 
+### 2.11 Event_Timeline
+Purpose:
+- Build a deterministic timeline for resolved events and event updates.
+
+Responsibilities:
+- Create a timeline node for each resolved event update.
+- Sort nodes chronologically.
+- Group nodes by event_id.
+- Distinguish first report, update, correction, duplicate, merge, and follow-up states.
+
 ---
 
 ## 3. Modified classes
