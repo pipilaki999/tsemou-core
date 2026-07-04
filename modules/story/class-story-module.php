@@ -11,6 +11,7 @@ class Story_Module {
         add_action('init', [$this, 'register_story_cpt']);
         add_action('add_meta_boxes', [$this, 'add_story_meta_boxes']);
         add_action('save_post_story', [$this, 'save_story_meta'], 10, 2);
+        add_action('save_post_story', [$this, 'trigger_event_identity_analysis'], 20, 2);
         // TSEMOU 3.0: root TSEMOU OS menu is registered centrally in tsemou-core.php.
     }
     public function add_os_menu() {
@@ -103,6 +104,16 @@ class Story_Module {
 
             $relationships = isset($_POST['tsemou_company_relationships']) ? (array) $_POST['tsemou_company_relationships'] : [];
             \TSEMOU\Modules\CompanyEngine\Company_Engine::save_company_relationships($post_id, $relationships);
+        }
+    }
+
+    public function trigger_event_identity_analysis($post_id, $post) {
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+        if (!current_user_can('edit_post', $post_id)) return;
+        if ($post->post_type !== 'story') return;
+
+        if (class_exists('\\TSEMOU\\Modules\\EventIdentity\\Event_Identity_Engine')) {
+            \TSEMOU\Modules\EventIdentity\Event_Identity_Engine::instance()->analyze_story($post_id);
         }
     }
 }
