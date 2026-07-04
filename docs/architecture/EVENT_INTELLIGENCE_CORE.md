@@ -155,6 +155,15 @@ Responsibilities:
 - Keep a revision history for the event intelligence analysis.
 - Support future re-analysis and debugging.
 
+### 2.10 Event_Resolver
+Purpose:
+- Classify incoming events as NEW_EVENT, UPDATE, DUPLICATE, MERGE, or CORRECTION using deterministic rules.
+
+Responsibilities:
+- Reuse the Event Identity Engine, Signature Engine, and Repository.
+- Evaluate similarity and merge readiness without AI or LLM inference.
+- Return a deterministic resolver decision and confidence score.
+
 ---
 
 ## 3. Modified classes
