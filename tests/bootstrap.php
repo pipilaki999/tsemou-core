@@ -55,6 +55,8 @@ require_once dirname(__DIR__) . '/modules/event-timeline/class-event-sequence.ph
 require_once dirname(__DIR__) . '/modules/event-timeline/class-event-timeline.php';
 require_once dirname(__DIR__) . '/modules/evidence-engine/class-evidence-engine.php';
 require_once dirname(__DIR__) . '/modules/policy-engine/class-policy-engine.php';
+require_once dirname(__DIR__) . '/modules/proof-engine/class-proof-engine.php';
+require_once dirname(__DIR__) . '/modules/trust-engine/class-trust-engine.php';
 require_once dirname(__DIR__) . '/modules/source-discovery/class-source-discovery.php';
 require_once dirname(__DIR__) . '/modules/knowledge-graph/class-knowledge-graph.php';
 require_once dirname(__DIR__) . '/modules/event-intelligence/class-event-intelligence-result.php';

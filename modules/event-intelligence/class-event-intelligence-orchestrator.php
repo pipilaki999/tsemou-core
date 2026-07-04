@@ -3,15 +3,14 @@ namespace TSEMOU\Modules\EventIntelligence;
 
 if (!defined('ABSPATH')) exit;
 
+use TSEMOU\Modules\EvidenceEngine\Evidence_Engine;
 use TSEMOU\Modules\EventIdentity\Event_Identity_Engine;
-use TSEMOU\Modules\EventIdentity\Event_Signature;
-use TSEMOU\Modules\EventIdentity\IdentityRepository;
 use TSEMOU\Modules\EventResolver\Event_Resolver;
 use TSEMOU\Modules\EventTimeline\Event_Timeline;
 use TSEMOU\Modules\KnowledgeGraph\Knowledge_Graph;
 use TSEMOU\Modules\PolicyEngine\Policy_Engine;
-use TSEMOU\Modules\SourceDiscovery\Source_Discovery;
-use TSEMOU\Modules\EvidenceEngine\Evidence_Engine;
+use TSEMOU\Modules\ProofEngine\Proof_Engine;
+use TSEMOU\Modules\TrustEngine\Trust_Engine;
 
 class Event_Intelligence_Orchestrator {
     private static $instance = null;
@@ -43,7 +42,7 @@ class Event_Intelligence_Orchestrator {
             'error' => '',
         ];
 
-        foreach (['story', 'discovery', 'evidence', 'policy', 'event_identity', 'resolver', 'timeline', 'graph'] as $stage) {
+        foreach (['story', 'evidence', 'policy', 'importance', 'trust', 'event_identity', 'resolver', 'timeline', 'graph'] as $stage) {
             $result = $this->execute_stage($stage, $input, $state);
             if (!$result['ok']) {
                 $state['failed_stage'] = $stage;
@@ -54,12 +53,14 @@ class Event_Intelligence_Orchestrator {
 
             if ($stage === 'story') {
                 $state['story'] = $result['data'];
-            } elseif ($stage === 'discovery') {
-                $state['discovery'] = $result['data'];
             } elseif ($stage === 'evidence') {
                 $state['evidence'] = $result['data'];
             } elseif ($stage === 'policy') {
                 $state['policy_decisions'] = $result['data'];
+            } elseif ($stage === 'importance') {
+                $state['importance'] = $result['data'];
+            } elseif ($stage === 'trust') {
+                $state['trust'] = $result['data'];
             } elseif ($stage === 'event_identity') {
                 $state['event_identity'] = $result['data'];
             } elseif ($stage === 'resolver') {
@@ -88,12 +89,14 @@ class Event_Intelligence_Orchestrator {
         switch ($stage) {
             case 'story':
                 return $this->default_story_stage($input);
-            case 'discovery':
-                return $this->default_discovery_stage($input, $state);
             case 'evidence':
                 return $this->default_evidence_stage($input, $state);
             case 'policy':
                 return $this->default_policy_stage($input, $state);
+            case 'importance':
+                return $this->default_importance_stage($input, $state);
+            case 'trust':
+                return $this->default_trust_stage($input, $state);
             case 'event_identity':
                 return $this->default_event_identity_stage($input, $state);
             case 'resolver':
@@ -126,23 +129,6 @@ class Event_Intelligence_Orchestrator {
         ], 'confidence' => 0.6];
     }
 
-    private function default_discovery_stage(array $input, array $state = []) {
-        $story = $state['story'] ?? [];
-        if (empty($story['id'])) {
-            return ['ok' => false, 'message' => 'Story context missing for discovery.'];
-        }
-
-        if (class_exists('\TSEMOU\Modules\SourceDiscovery\Source_Discovery')) {
-            $task = [
-                'story_id' => $story['id'],
-                'title' => $story['title'] ?? '',
-            ];
-            return ['ok' => true, 'data' => Source_Discovery::discover($task), 'confidence' => 0.5];
-        }
-
-        return ['ok' => false, 'message' => 'Source discovery service unavailable.'];
-    }
-
     private function default_evidence_stage(array $input, array $state) {
         $story = $state['story'] ?? [];
         if (empty($story['id'])) {
@@ -165,7 +151,7 @@ class Event_Intelligence_Orchestrator {
     }
 
     private function default_policy_stage(array $input, array $state) {
-        if (class_exists('\TSEMOU\Modules\PolicyEngine\Policy_Engine')) {
+        if (class_exists('TSEMOU\\Modules\\PolicyEngine\\Policy_Engine')) {
             $decision = [
                 'decision' => 'review',
                 'threshold' => floatval(Policy_Engine::get('event.identity.min_confidence', 0.6)),
@@ -174,6 +160,43 @@ class Event_Intelligence_Orchestrator {
         }
 
         return ['ok' => false, 'message' => 'Policy engine unavailable.'];
+    }
+
+    private function default_importance_stage(array $input, array $state) {
+        $story = $state['story'] ?? [];
+        if (empty($story['id'])) {
+            return ['ok' => false, 'message' => 'Story context missing for importance evaluation.'];
+        }
+
+        $evidence = $state['evidence'] ?? [];
+        $evidence_id = absint($evidence['id'] ?? 0);
+        if ($evidence_id && class_exists('TSEMOU\\Modules\\ProofEngine\\Proof_Engine')) {
+            $intelligence = Proof_Engine::get_evidence_intelligence($evidence_id);
+            return ['ok' => true, 'data' => $intelligence, 'confidence' => floatval($intelligence['confidence'] ?? 0.0)];
+        }
+
+        return ['ok' => true, 'data' => ['impact' => 0.0, 'confidence' => 0.0], 'confidence' => 0.0];
+    }
+
+    private function default_trust_stage(array $input, array $state) {
+        $story = $state['story'] ?? [];
+        if (empty($story['id'])) {
+            return ['ok' => false, 'message' => 'Story context missing for trust evaluation.'];
+        }
+
+        if (class_exists('TSEMOU\\Modules\\TrustEngine\\Trust_Engine')) {
+            $company_ids = [];
+            if (class_exists('TSEMOU\\Modules\\CompanyEngine\\Company_Engine')) {
+                $company_ids = \TSEMOU\Modules\CompanyEngine\Company_Engine::get_connected_company_ids(intval($story['id']));
+            }
+            $score = 0.0;
+            foreach ($company_ids as $company_id) {
+                $score = max($score, floatval(Trust_Engine::recalculate_company_trust(intval($company_id))));
+            }
+            return ['ok' => true, 'data' => ['company_ids' => $company_ids, 'score' => $score], 'confidence' => 0.5];
+        }
+
+        return ['ok' => false, 'message' => 'Trust engine unavailable.'];
     }
 
     private function default_event_identity_stage(array $input, array $state) {

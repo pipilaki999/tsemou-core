@@ -10,14 +10,17 @@ class EventIntelligenceOrchestratorTest extends \PHPUnit\Framework\TestCase {
             'story' => function(array $input) {
                 return ['ok' => true, 'data' => ['id' => 77, 'title' => 'Acme investigation', 'company_ids' => [11]]];
             },
-            'discovery' => function(array $input) {
-                return ['ok' => true, 'data' => ['sources' => [['source_id' => 'src-1']], 'count' => 1]];
-            },
             'evidence' => function(array $input) {
                 return ['ok' => true, 'data' => ['id' => 99, 'summary' => 'Evidence sample']];
             },
             'policy' => function(array $input, array $state) {
                 return ['ok' => true, 'data' => ['decision' => 'review', 'threshold' => 0.6]];
+            },
+            'importance' => function(array $input, array $state) {
+                return ['ok' => true, 'data' => ['impact' => 0.8, 'confidence' => 0.9]];
+            },
+            'trust' => function(array $input, array $state) {
+                return ['ok' => true, 'data' => ['company_ids' => [11], 'score' => 7.4]];
             },
             'event_identity' => function(array $input, array $state) {
                 return ['ok' => true, 'data' => ['status' => 'analyzed', 'confidence' => 0.8]];
@@ -48,15 +51,15 @@ class EventIntelligenceOrchestratorTest extends \PHPUnit\Framework\TestCase {
             'story' => function(array $input) {
                 return ['ok' => true, 'data' => ['id' => 77, 'title' => 'Acme investigation']];
             },
-            'discovery' => function(array $input) {
-                return ['ok' => false, 'message' => 'discovery failed'];
+            'evidence' => function(array $input) {
+                return ['ok' => false, 'message' => 'evidence failed'];
             },
         ];
 
         $result = (new Event_Intelligence_Orchestrator($services))->run(['story_id' => 77]);
 
         $this->assertSame('failed', $result->status);
-        $this->assertSame('discovery', $result->failed_stage);
-        $this->assertSame('discovery failed', $result->error);
+        $this->assertSame('evidence', $result->failed_stage);
+        $this->assertSame('evidence failed', $result->error);
     }
 }
