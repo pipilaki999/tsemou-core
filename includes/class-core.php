@@ -40,6 +40,11 @@ class Core {
         require_once TSEMOU_CORE_PATH . 'modules/event-identity/class-event-candidate.php';
         require_once TSEMOU_CORE_PATH . 'modules/event-identity/class-event-identity-matcher.php';
         require_once TSEMOU_CORE_PATH . 'modules/event-identity/class-event-identity-engine.php';
+        require_once TSEMOU_CORE_PATH . 'modules/event-identity/class-candidate-normalizer.php';
+        require_once TSEMOU_CORE_PATH . 'modules/event-identity/class-alias-resolver.php';
+        require_once TSEMOU_CORE_PATH . 'modules/event-identity/class-identity-signature.php';
+        require_once TSEMOU_CORE_PATH . 'modules/event-identity/class-identity-matcher.php';
+        require_once TSEMOU_CORE_PATH . 'modules/event-identity/class-identity-repository.php';
         require_once TSEMOU_CORE_PATH . 'modules/story/class-story-module.php';
         require_once TSEMOU_CORE_PATH . 'modules/trust-engine/class-trust-engine.php';
         if (class_exists('\TSEMOU\Modules\ConfigurationOS\Configuration_OS') && method_exists('\TSEMOU\Modules\ConfigurationOS\Configuration_OS', 'instance')) { \TSEMOU\Modules\ConfigurationOS\Configuration_OS::instance(); }
