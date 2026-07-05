@@ -24,6 +24,7 @@ class Core {
         require_once TSEMOU_CORE_PATH . 'modules/relationship-engine/class-relationship-engine.php';
         require_once TSEMOU_CORE_PATH . 'modules/entity-evidence-links/class-entity-evidence-links.php';
         require_once TSEMOU_CORE_PATH . 'modules/knowledge-graph/class-knowledge-graph.php';
+        require_once TSEMOU_CORE_PATH . 'modules/knowledge-graph/class-knowledge-graph-update-engine.php';
         require_once TSEMOU_CORE_PATH . 'modules/company-discovery/class-company-discovery.php';
         require_once TSEMOU_CORE_PATH . 'modules/company-sensor/class-company-sensor.php';
         require_once TSEMOU_CORE_PATH . 'modules/company-section-engine/class-company-section-engine.php';
@@ -72,6 +73,7 @@ class Core {
         if (class_exists('\TSEMOU\Modules\RelationshipEngine\Relationship_Engine') && method_exists('\TSEMOU\Modules\RelationshipEngine\Relationship_Engine', 'instance')) { \TSEMOU\Modules\RelationshipEngine\Relationship_Engine::instance(); }
         if (class_exists('\TSEMOU\Modules\EntityEvidenceLinks\Entity_Evidence_Links') && method_exists('\TSEMOU\Modules\EntityEvidenceLinks\Entity_Evidence_Links', 'instance')) { \TSEMOU\Modules\EntityEvidenceLinks\Entity_Evidence_Links::instance(); }
         if (class_exists('\TSEMOU\Modules\KnowledgeGraph\Knowledge_Graph') && method_exists('\TSEMOU\Modules\KnowledgeGraph\Knowledge_Graph', 'instance')) { \TSEMOU\Modules\KnowledgeGraph\Knowledge_Graph::instance(); }
+        if (class_exists('\TSEMOU\Modules\KnowledgeGraph\Knowledge_Graph_Update_Engine') && method_exists('\TSEMOU\Modules\KnowledgeGraph\Knowledge_Graph_Update_Engine', 'instance')) { \TSEMOU\Modules\KnowledgeGraph\Knowledge_Graph_Update_Engine::instance(); }
         if (class_exists('\TSEMOU\Modules\CompanyDiscovery\Company_Discovery') && method_exists('\TSEMOU\Modules\CompanyDiscovery\Company_Discovery', 'instance')) { \TSEMOU\Modules\CompanyDiscovery\Company_Discovery::instance(); }
         if (class_exists('\TSEMOU\Modules\CompanySensor\Company_Sensor') && method_exists('\TSEMOU\Modules\CompanySensor\Company_Sensor', 'instance')) { \TSEMOU\Modules\CompanySensor\Company_Sensor::instance(); }
         if (class_exists('\TSEMOU\Modules\CompanySectionEngine\Company_Section_Engine') && method_exists('\TSEMOU\Modules\CompanySectionEngine\Company_Section_Engine', 'instance')) { \TSEMOU\Modules\CompanySectionEngine\Company_Section_Engine::instance(); }

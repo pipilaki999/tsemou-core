@@ -91,6 +91,8 @@ Included:
 - Version target: v5.0.2
 - Relationship Engine added
 - Relationship Engine MVT implemented
+- Knowledge Graph Update Engine added
+- Knowledge Graph Update Engine MVT implemented
 
 No frontend UI changes.
 
@@ -170,6 +172,13 @@ Implemented MVT core
 Purpose:
 Provides a minimal internal layer for normalizing and validating relationships between entities before persistence and public interaction layers are added.
 
+### Knowledge Graph Update Engine
+Status:
+Implemented MVT core
+
+Purpose:
+Coordinates graph update payloads between Entity Engine, Relationship Engine, and the existing Knowledge Graph layer without introducing a new persistence system.
+
 ### Discovery Layer
 Status:
 Active / evolving
@@ -240,17 +249,19 @@ Current target version:
 v5.0.2
 
 Current task:
-Implement Relationship Engine MVT core.
+Implement Knowledge Graph Update Engine MVT core.
 
 Commit message:
-v5.0.2 - Implement Relationship Engine MVT core
+v5.0.2 - Implement Knowledge Graph Update Engine MVT core
 
 Files expected in commit:
 - MASTER_PROJECT_MEMORY.md
 - docs/ENTITY_ENGINE.md
 - docs/RELATIONSHIP_ENGINE.md
+- docs/KNOWLEDGE_GRAPH_ENGINE.md
 - modules/entity-engine/class-entity-engine.php
 - modules/relationship-engine/class-relationship-engine.php
+- modules/knowledge-graph/class-knowledge-graph-update-engine.php
 - includes/class-core.php
 
 Important:
