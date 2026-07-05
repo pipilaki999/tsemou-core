@@ -57,6 +57,9 @@ Current documentation files:
 
 No PHP implementation is currently required for v5.0.1.
 
+Current implementation target after v5.0.1:
+v5.0.2
+
 ## 6. Version History
 
 ### v5.0.0
@@ -78,6 +81,18 @@ Included:
 - Master Project Memory introduced
 
 No PHP changes.
+
+### v5.0.2
+Entity Engine initial core release.
+
+Included:
+- Entity Engine added
+- Status: implemented initial core
+- Version target: v5.0.2
+- Relationship Engine added
+- Relationship Engine MVT implemented
+
+No frontend UI changes.
 
 ## 7. Architectural Decisions
 
@@ -140,6 +155,20 @@ Active
 
 Purpose:
 Stores structured evidence and allows future connection to multiple system objects.
+
+### Entity Engine
+Status:
+Implemented initial core
+
+Purpose:
+Provides a central service layer for representing normalized system entities for future engines.
+
+### Relationship Engine
+Status:
+Implemented MVT core
+
+Purpose:
+Provides a minimal internal layer for normalizing and validating relationships between entities before persistence and public interaction layers are added.
 
 ### Discovery Layer
 Status:
@@ -208,21 +237,24 @@ The development workflow is:
 
 ## 14. Next Session Starting Point
 Current target version:
-v5.0.1
+v5.0.2
 
 Current task:
-Commit documentation release.
+Implement Relationship Engine MVT core.
 
 Commit message:
-v5.0.1 - Add Phase C.5 Interactive Citizen Experience docs
+v5.0.2 - Implement Relationship Engine MVT core
 
 Files expected in commit:
-- DESIGN_MODEL.md
-- INTERACTIVE_CITIZEN_EXPERIENCE.md
 - MASTER_PROJECT_MEMORY.md
+- docs/ENTITY_ENGINE.md
+- docs/RELATIONSHIP_ENGINE.md
+- modules/entity-engine/class-entity-engine.php
+- modules/relationship-engine/class-relationship-engine.php
+- includes/class-core.php
 
 Important:
-No PHP files should be included in this commit.
+Do not include unrelated PHP files in this commit.
 
 Next development focus after commit:
-Begin the intermediate engine layer for Phase C.5 before moving to Phase D.
+Continue the intermediate engine layer for Phase C.5 before moving to Phase D.

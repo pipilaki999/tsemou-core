@@ -21,6 +21,7 @@ class Core {
         require_once TSEMOU_CORE_PATH . 'modules/automatic-evidence-creation/class-automatic-evidence-creation.php';
         require_once TSEMOU_CORE_PATH . 'modules/automatic-linking/class-automatic-linking.php';
         require_once TSEMOU_CORE_PATH . 'modules/entity-engine/class-entity-engine.php';
+        require_once TSEMOU_CORE_PATH . 'modules/relationship-engine/class-relationship-engine.php';
         require_once TSEMOU_CORE_PATH . 'modules/entity-evidence-links/class-entity-evidence-links.php';
         require_once TSEMOU_CORE_PATH . 'modules/knowledge-graph/class-knowledge-graph.php';
         require_once TSEMOU_CORE_PATH . 'modules/company-discovery/class-company-discovery.php';
@@ -68,6 +69,7 @@ class Core {
         if (class_exists('\TSEMOU\Modules\AutomaticEvidenceCreation\Automatic_Evidence_Creation') && method_exists('\TSEMOU\Modules\AutomaticEvidenceCreation\Automatic_Evidence_Creation', 'instance')) { \TSEMOU\Modules\AutomaticEvidenceCreation\Automatic_Evidence_Creation::instance(); }
         if (class_exists('\TSEMOU\Modules\AutomaticLinking\Automatic_Linking') && method_exists('\TSEMOU\Modules\AutomaticLinking\Automatic_Linking', 'instance')) { \TSEMOU\Modules\AutomaticLinking\Automatic_Linking::instance(); }
         if (class_exists('\TSEMOU\Modules\EntityEngine\Entity_Engine') && method_exists('\TSEMOU\Modules\EntityEngine\Entity_Engine', 'instance')) { \TSEMOU\Modules\EntityEngine\Entity_Engine::instance(); }
+        if (class_exists('\TSEMOU\Modules\RelationshipEngine\Relationship_Engine') && method_exists('\TSEMOU\Modules\RelationshipEngine\Relationship_Engine', 'instance')) { \TSEMOU\Modules\RelationshipEngine\Relationship_Engine::instance(); }
         if (class_exists('\TSEMOU\Modules\EntityEvidenceLinks\Entity_Evidence_Links') && method_exists('\TSEMOU\Modules\EntityEvidenceLinks\Entity_Evidence_Links', 'instance')) { \TSEMOU\Modules\EntityEvidenceLinks\Entity_Evidence_Links::instance(); }
         if (class_exists('\TSEMOU\Modules\KnowledgeGraph\Knowledge_Graph') && method_exists('\TSEMOU\Modules\KnowledgeGraph\Knowledge_Graph', 'instance')) { \TSEMOU\Modules\KnowledgeGraph\Knowledge_Graph::instance(); }
         if (class_exists('\TSEMOU\Modules\CompanyDiscovery\Company_Discovery') && method_exists('\TSEMOU\Modules\CompanyDiscovery\Company_Discovery', 'instance')) { \TSEMOU\Modules\CompanyDiscovery\Company_Discovery::instance(); }
