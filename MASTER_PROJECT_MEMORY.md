@@ -34,6 +34,7 @@ Phase A: Completed
 Phase B: Completed
 Phase C: Completed
 Phase C.5: Interactive Citizen Experience
+Phase C.6: Integration
 Phase D: Next major phase after C.5
 
 Updated sequence:
@@ -41,7 +42,12 @@ Updated sequence:
 2. Phase B
 3. Phase C
 4. Phase C.5
-5. Phase D
+5. Phase C.6
+6. Phase D
+
+Phase C.6 - Integration
+Goal:
+Unify Discovery, Story, Evidence Processing, tsemou_proof, Knowledge Graph and Company Page.
 
 ## 5. Phase C.5 - Interactive Citizen Experience
 Phase C.5 has been added before Phase D.
@@ -97,6 +103,17 @@ Included:
 - Evidence Processing Engine MVT implemented
 
 No frontend UI changes.
+
+### Canonical Evidence Model Decision
+Canonical Evidence Model: `tsemou_proof`
+
+Meaning:
+- `evidence` is a conceptual name only.
+- `tsemou_proof` is the persistent WordPress CPT for beta.
+- All new Phase C.6 integration must write to `tsemou_proof`.
+- Legacy evidence paths may remain temporarily but must not be extended.
+- No migration is performed in this step.
+- This decision supports the MVT by removing duplicate evidence lifecycle ambiguity.
 
 ## 7. Architectural Decisions
 
@@ -159,6 +176,9 @@ Active
 
 Purpose:
 Stores structured evidence and allows future connection to multiple system objects.
+
+Canonical beta persistence model:
+`tsemou_proof`
 
 ### Entity Engine
 Status:
@@ -280,3 +300,6 @@ Do not include unrelated PHP files in this commit.
 
 Next development focus after commit:
 Continue the intermediate engine layer for Phase C.5 before moving to Phase D.
+
+Current integration decision:
+Use `tsemou_proof` as the only canonical persistent evidence model for Phase C.6 and beta integration.
