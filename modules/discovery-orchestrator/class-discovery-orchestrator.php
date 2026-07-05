@@ -269,6 +269,7 @@ class Discovery_Orchestrator {
     public static function make_queue_key($engine, $payload) {
         $parts = [
             $engine,
+            $payload['story_id'] ?? '',
             $payload['country'] ?? '',
             $payload['industry'] ?? '',
             $payload['wave'] ?? '',
@@ -282,7 +283,7 @@ class Discovery_Orchestrator {
 
     public static function enqueue($engine, array $payload = [], $priority = 0) {
         $pipeline = self::pipeline();
-        if (!isset($pipeline[$engine])) {
+        if (!isset($pipeline[$engine]) && $engine !== 'story_processing') {
             self::add_log('error', 'Cannot enqueue unknown Phase A engine.', ['engine' => $engine]);
             return false;
         }
@@ -314,6 +315,11 @@ class Discovery_Orchestrator {
         self::save_queue($queue);
         self::add_log('queue', 'Queued Phase A engine step.', ['engine' => $engine, 'queue_key' => $queue_key]);
         return true;
+    }
+
+    public static function enqueue_story_processing($story_id, array $payload = [], $priority = 0) {
+        $payload['story_id'] = absint($story_id);
+        return self::enqueue('story_processing', $payload, $priority);
     }
 
     public static function seed_company_discovery_queue($limit = 100) {
@@ -470,6 +476,8 @@ class Discovery_Orchestrator {
         $engine = $item['current_engine'] ?? $item['type'] ?? '';
 
         switch ($engine) {
+            case 'story_processing':
+                return self::execute_story_processing($item);
             case 'company_discovery':
                 return self::execute_company_discovery($item);
             case 'source_discovery':
@@ -485,6 +493,67 @@ class Discovery_Orchestrator {
         }
 
         return ['success' => false, 'message' => 'No Phase A executor available for engine: ' . $engine];
+    }
+
+    public static function execute_story_processing($item) {
+        $payload = self::payload_from_item($item);
+        $story_id = absint($payload['story_id'] ?? 0);
+
+        if ($story_id <= 0) {
+            return [
+                'success' => false,
+                'message' => 'Story processing requires a valid story_id.'
+            ];
+        }
+
+        if (!class_exists('\\TSEMOU\\Modules\\EvidenceProcessingEngine\\Evidence_Processing_Engine')) {
+            $file = TSEMOU_CORE_PATH . 'modules/evidence-processing-engine/class-evidence-processing-engine.php';
+            if (file_exists($file)) {
+                require_once $file;
+            }
+        }
+
+        if (!class_exists('\\TSEMOU\\Modules\\EvidenceProcessingEngine\\Evidence_Processing_Engine')) {
+            return [
+                'success' => false,
+                'message' => 'Evidence Processing Engine is not loaded.'
+            ];
+        }
+
+        $result = \\TSEMOU\\Modules\\EvidenceProcessingEngine\\Evidence_Processing_Engine::process_story($story_id);
+
+        if (empty($result['status']) || $result['status'] === 'error') {
+            self::add_log('story_processing', 'Story processing failed.', [
+                'story_id' => $story_id,
+                'errors' => $result['errors'] ?? []
+            ]);
+
+            return [
+                'success' => false,
+                'message' => !empty($result['errors']) ? implode('; ', (array) $result['errors']) : 'Story processing failed.'
+            ];
+        }
+
+        $payload['story_processing_status'] = $result['status'] ?? 'success';
+        $payload['proof_id'] = intval($result['proof_id'] ?? 0);
+        $payload['evidence'] = $result['evidence'] ?? [];
+        $payload['relationships'] = $result['relationships'] ?? [];
+        $payload['graph'] = $result['graph'] ?? [];
+
+        self::add_log('story_processing', 'Story processed into canonical evidence.', [
+            'story_id' => $story_id,
+            'proof_id' => $payload['proof_id'],
+            'warnings' => $result['warnings'] ?? [],
+            'errors' => $result['errors'] ?? []
+        ]);
+
+        return [
+            'success' => true,
+            'message' => 'Story processing completed. Canonical proof created or updated.',
+            'next_engine' => null,
+            'payload' => $payload,
+            'result' => $result
+        ];
     }
 
     public static function execute_company_discovery($item) {
@@ -787,7 +856,7 @@ class Discovery_Orchestrator {
         ?>
         <div class="wrap tsemou-orchestrator">
             <h1>TSEMOU Discovery Orchestrator</h1>
-            <p><strong>Phase A only:</strong> coordinates acquisition flow. No AI, no Trust, no Reputation, no frontend decisions.</p>
+            <p><strong>Phase A acquisition remains intact:</strong> coordinates acquisition flow and also accepts story-processing bridge jobs. No AI, no Trust, no Reputation, no frontend decisions.</p>
 
             <h2>Actions</h2>
             <form method="post" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:18px;">

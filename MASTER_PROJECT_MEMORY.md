@@ -104,6 +104,16 @@ Included:
 
 No frontend UI changes.
 
+### v5.0.3
+Integration release.
+
+Included:
+- Discovery Orchestrator story-processing bridge added
+- Discovery Orchestrator can now queue and execute Story-based Evidence Processing Engine jobs
+- Story processing now flows into canonical `tsemou_proof` and downstream relationship/graph coordination
+
+No new CPTs, no new tables, no frontend UI changes.
+
 ### Canonical Evidence Model Decision
 Canonical Evidence Model: `tsemou_proof`
 
@@ -282,33 +292,24 @@ The development workflow is:
 
 ## 14. Next Session Starting Point
 Current target version:
-v5.0.2
+v5.0.3
 
 Current task:
-Implement Story to Proof integration.
+Implement Phase C.6.3 Discovery Orchestrator integration.
 
 Commit message:
-v5.0.2 - Integrate Evidence Processing Engine with tsemou_proof
+v5.0.3 - Add Discovery Orchestrator story-processing bridge
 
 Files expected in commit:
 - MASTER_PROJECT_MEMORY.md
-- docs/ENTITY_ENGINE.md
-- docs/RELATIONSHIP_ENGINE.md
-- docs/KNOWLEDGE_GRAPH_ENGINE.md
-- docs/EVIDENCE_PROCESSING_ENGINE.md
-- docs/STORY_TO_PROOF_INTEGRATION.md
-- modules/entity-engine/class-entity-engine.php
-- modules/relationship-engine/class-relationship-engine.php
-- modules/knowledge-graph/class-knowledge-graph-update-engine.php
-- modules/evidence-processing-engine/class-evidence-processing-engine.php
-- modules/proof-engine/class-proof-engine.php
-- includes/class-core.php
+- docs/DISCOVERY_ORCHESTRATOR_C6_INTEGRATION.md
+- modules/discovery-orchestrator/class-discovery-orchestrator.php
 
 Important:
 Do not include unrelated PHP files in this commit.
 
 Next development focus after commit:
-Continue the intermediate engine layer for Phase C.5 before moving to Phase D.
+Validate the end-to-end MVT smoke path and keep Phase A acquisition stable.
 
 Current integration decision:
 Use `tsemou_proof` as the only canonical persistent evidence model for Phase C.6 and beta integration.
