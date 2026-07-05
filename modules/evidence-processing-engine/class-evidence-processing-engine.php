@@ -4,6 +4,7 @@ namespace TSEMOU\Modules\EvidenceProcessingEngine;
 use TSEMOU\Modules\CompanyEngine\Company_Engine;
 use TSEMOU\Modules\EntityEngine\Entity_Engine;
 use TSEMOU\Modules\KnowledgeGraph\Knowledge_Graph_Update_Engine;
+use TSEMOU\Modules\ProofEngine\Proof_Engine;
 use TSEMOU\Modules\RelationshipEngine\Relationship_Engine;
 
 if (!defined('ABSPATH')) exit;
@@ -63,6 +64,29 @@ class Evidence_Processing_Engine {
         }
 
         $evidence = self::build_evidence_payload($story, $story_entity, $context);
+        $proof = self::materialize_proof($story, $evidence);
+        if (empty($proof['success'])) {
+            return [
+                'status' => 'error',
+                'story' => [
+                    'id' => intval($story->ID),
+                    'post_type' => $story->post_type,
+                    'title' => get_the_title($story),
+                    'entity' => $story_entity
+                ],
+                'evidence' => $evidence,
+                'relationships' => [],
+                'graph' => [],
+                'warnings' => $warnings,
+                'errors' => [sanitize_text_field($proof['message'] ?? 'proof_materialization_failed')]
+            ];
+        }
+
+        $evidence['proof_id'] = intval($proof['proof_id'] ?? 0);
+        $evidence['proof_action'] = sanitize_key($proof['action'] ?? '');
+        $evidence['entity']['entity_id'] = intval($proof['proof_id'] ?? 0);
+        $evidence['entity']['post_type'] = 'tsemou_proof';
+        $evidence['entity']['permalink'] = get_permalink(intval($proof['proof_id'] ?? 0));
         $relationships = self::build_relationships($story, $story_entity, $evidence, $context);
         $graph = self::update_graph($evidence, $relationships);
 
@@ -84,6 +108,7 @@ class Evidence_Processing_Engine {
             'evidence' => $evidence,
             'relationships' => $relationships,
             'graph' => $graph,
+            'proof_id' => intval($proof['proof_id'] ?? 0),
             'warnings' => array_values(array_unique($warnings)),
             'errors' => array_values(array_unique($errors))
         ];
@@ -142,6 +167,7 @@ class Evidence_Processing_Engine {
 
         return [
             'entity' => $evidence_entity,
+            'proof_id' => 0,
             'source_story_id' => intval($story->ID),
             'source_story_entity' => $story_entity,
             'title' => get_the_title($story),
@@ -149,6 +175,7 @@ class Evidence_Processing_Engine {
             'status' => sanitize_key($story->post_status),
             'source' => 'story_processing',
             'meta' => [
+                'story_id' => intval($story->ID),
                 'call_sign' => $context['call_sign'] ?? '',
                 'connected_company_ids' => $context['connected_company_ids'] ?? [],
                 'story_status' => $context['story_status'] ?? '',
@@ -201,7 +228,7 @@ class Evidence_Processing_Engine {
 
             $relationships[] = Relationship_Engine::normalize_relationship(
                 ['entity_type' => 'company', 'entity_id' => $company_id],
-                ['entity_type' => 'evidence', 'entity_id' => intval($evidence_entity['entity_id'])],
+                ['entity_type' => 'evidence', 'entity_id' => intval($evidence['proof_id'] ?? $evidence_entity['entity_id'])],
                 'company_has_evidence',
                 [
                     'confidence' => 1.0,
@@ -241,9 +268,22 @@ class Evidence_Processing_Engine {
         return [
             'entity_types_supported' => count(Entity_Engine::get_supported_entity_types()),
             'relationship_types_supported' => count(Relationship_Engine::get_supported_relationship_types()),
-            'processing_mode' => 'story_to_structured_evidence',
+            'processing_mode' => 'story_to_tsemou_proof',
             'graph_update_mode' => 'service_only'
         ];
+    }
+
+    private static function materialize_proof($story, $evidence) {
+        if (!class_exists('TSEMOU\\Modules\\ProofEngine\\Proof_Engine') || !method_exists('TSEMOU\\Modules\\ProofEngine\\Proof_Engine', 'create_or_update_for_story')) {
+            return [
+                'success' => false,
+                'proof_id' => 0,
+                'action' => 'none',
+                'message' => 'Proof Engine integration unavailable.'
+            ];
+        }
+
+        return Proof_Engine::create_or_update_for_story(intval($story->ID), $evidence);
     }
 
     private static function build_processing_context($story, $story_entity) {

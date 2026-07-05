@@ -208,6 +208,13 @@ Implemented MVT core
 Purpose:
 Transforms Story posts into structured internal evidence payloads and graph-ready relationships using the existing entity, relationship, and graph update engines.
 
+### Story To Proof Integration
+Status:
+Implemented integration step
+
+Purpose:
+Connects Evidence Processing Engine to the canonical `tsemou_proof` model so Story processing now materializes into the beta evidence CPT.
+
 ### Discovery Layer
 Status:
 Active / evolving
@@ -278,10 +285,10 @@ Current target version:
 v5.0.2
 
 Current task:
-Implement Evidence Processing Engine MVT core.
+Implement Story to Proof integration.
 
 Commit message:
-v5.0.2 - Implement Evidence Processing Engine MVT core
+v5.0.2 - Integrate Evidence Processing Engine with tsemou_proof
 
 Files expected in commit:
 - MASTER_PROJECT_MEMORY.md
@@ -289,10 +296,12 @@ Files expected in commit:
 - docs/RELATIONSHIP_ENGINE.md
 - docs/KNOWLEDGE_GRAPH_ENGINE.md
 - docs/EVIDENCE_PROCESSING_ENGINE.md
+- docs/STORY_TO_PROOF_INTEGRATION.md
 - modules/entity-engine/class-entity-engine.php
 - modules/relationship-engine/class-relationship-engine.php
 - modules/knowledge-graph/class-knowledge-graph-update-engine.php
 - modules/evidence-processing-engine/class-evidence-processing-engine.php
+- modules/proof-engine/class-proof-engine.php
 - includes/class-core.php
 
 Important:

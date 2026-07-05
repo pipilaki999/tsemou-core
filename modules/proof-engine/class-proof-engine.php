@@ -217,6 +217,103 @@ class Proof_Engine {
             'meta_value' => $file_id
         ]);
     }
+
+    /**
+     * Create or update the canonical proof for a Story-derived evidence payload.
+     *
+     * @param int $story_id
+     * @param array $payload
+     * @return array
+     */
+    public static function create_or_update_for_story($story_id, $payload = []) {
+        $story_id = absint($story_id);
+        $payload = is_array($payload) ? $payload : [];
+
+        if ($story_id <= 0) {
+            return [
+                'success' => false,
+                'proof_id' => 0,
+                'action' => 'none',
+                'message' => 'Invalid story id.'
+            ];
+        }
+
+        $story = get_post($story_id);
+        if (!$story || $story->post_type !== 'story') {
+            return [
+                'success' => false,
+                'proof_id' => 0,
+                'action' => 'none',
+                'message' => 'Story not found.'
+            ];
+        }
+
+        $existing = self::get_proofs_for_file($story_id);
+        $proof = !empty($existing) ? $existing[0] : null;
+        $action = $proof ? 'updated' : 'created';
+
+        $post_data = [
+            'post_title' => sanitize_text_field($payload['title'] ?? get_the_title($story)),
+            'post_content' => sanitize_textarea_field($payload['summary'] ?? ''),
+            'post_status' => 'draft',
+            'post_type' => 'tsemou_proof'
+        ];
+
+        if ($proof) {
+            $post_data['ID'] = intval($proof->ID);
+            $proof_id = wp_update_post($post_data, true);
+        } else {
+            $proof_id = wp_insert_post($post_data, true);
+        }
+
+        if (is_wp_error($proof_id) || !$proof_id) {
+            return [
+                'success' => false,
+                'proof_id' => 0,
+                'action' => $action,
+                'message' => 'Could not save proof.'
+            ];
+        }
+
+        update_post_meta($proof_id, '_tsemou_related_file', $story_id);
+        update_post_meta($proof_id, '_tsemou_proof_source', sanitize_text_field($payload['source'] ?? 'story_processing'));
+        update_post_meta($proof_id, '_tsemou_proof_url', esc_url_raw($payload['meta']['permalink'] ?? ''));
+        update_post_meta($proof_id, '_tsemou_proof_type', 'report');
+        update_post_meta($proof_id, '_tsemou_proof_reliability', 'medium');
+        update_post_meta($proof_id, '_tsemou_evidence_type', 'journalistic_investigation');
+        update_post_meta($proof_id, '_tsemou_source_type', 'media');
+        update_post_meta($proof_id, '_tsemou_verification_level', 'unverified');
+        update_post_meta($proof_id, '_tsemou_legal_status', 'not_legal');
+        update_post_meta($proof_id, '_tsemou_severity', 'medium');
+        update_post_meta($proof_id, '_tsemou_trust_include', 'yes');
+        update_post_meta($proof_id, '_tsemou_manual_adjustment_note', 'Created by Evidence Processing Engine from Story.');
+        update_post_meta($proof_id, '_tsemou_story_id', $story_id);
+
+        $company_ids = $payload['meta']['connected_company_ids'] ?? [];
+        if (!is_array($company_ids)) {
+            $company_ids = [];
+        }
+        $company_ids = array_values(array_filter(array_map('intval', $company_ids)));
+
+        if (!empty($company_ids)) {
+            update_post_meta($proof_id, '_tsemou_evidence_company_ids', $company_ids);
+            update_post_meta($proof_id, '_tsemou_evidence_company', intval($company_ids[0]));
+            update_post_meta($proof_id, '_tsemou_related_company', intval($company_ids[0]));
+            update_post_meta($proof_id, 'company', $company_ids);
+        }
+
+        $engine = self::instance();
+        $engine->build_and_save_evidence_profile($proof_id);
+        $engine->build_and_save_evidence_intelligence($proof_id);
+        $engine->sync_evidence_to_companies($proof_id);
+
+        return [
+            'success' => true,
+            'proof_id' => intval($proof_id),
+            'action' => $action,
+            'message' => 'Proof ' . $action . '.'
+        ];
+    }
     /**
      * Evidence Engine v0.9.8
      *
