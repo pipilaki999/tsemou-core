@@ -5,12 +5,14 @@ if (!defined('ABSPATH')) exit;
 
 use TSEMOU\Modules\EvidenceEngine\Evidence_Engine;
 use TSEMOU\Modules\EventIdentity\Event_Identity_Engine;
+use TSEMOU\Modules\EventIntelligence\Event_Graph_Adapter;
+use TSEMOU\Modules\EventIntelligence\Event_Policy_Adapter;
+use TSEMOU\Modules\EventIntelligence\Event_Public_Importance_Service;
+use TSEMOU\Modules\EventIntelligence\Event_Story_Ranking_Service;
+use TSEMOU\Modules\EventIntelligence\Event_Trust_Adapter;
 use TSEMOU\Modules\EventResolver\Event_Resolver;
 use TSEMOU\Modules\EventTimeline\Event_Timeline;
-use TSEMOU\Modules\KnowledgeGraph\Knowledge_Graph;
-use TSEMOU\Modules\PolicyEngine\Policy_Engine;
 use TSEMOU\Modules\ProofEngine\Proof_Engine;
-use TSEMOU\Modules\TrustEngine\Trust_Engine;
 
 class Event_Intelligence_Orchestrator {
     private static $instance = null;
@@ -25,6 +27,9 @@ class Event_Intelligence_Orchestrator {
 
     public function __construct(array $services = []) {
         $this->services = $services;
+        if (empty($services) && function_exists('add_action')) {
+            add_action('save_post_story', [$this, 'handle_story_save'], 30, 2);
+        }
     }
 
     public function run(array $input = []) {
@@ -36,13 +41,16 @@ class Event_Intelligence_Orchestrator {
             'resolver_result' => null,
             'timeline' => null,
             'policy_decisions' => null,
+            'importance' => null,
+            'trust' => null,
+            'story_ranking' => null,
             'graph_updates' => null,
             'confidence' => 0.0,
             'failed_stage' => '',
             'error' => '',
         ];
 
-        foreach (['story', 'evidence', 'policy', 'importance', 'trust', 'event_identity', 'resolver', 'timeline', 'graph'] as $stage) {
+        foreach (['story', 'evidence', 'event_identity', 'resolver', 'timeline', 'policy', 'importance', 'trust', 'story_ranking', 'graph'] as $stage) {
             $result = $this->execute_stage($stage, $input, $state);
             if (!$result['ok']) {
                 $state['failed_stage'] = $stage;
@@ -67,6 +75,8 @@ class Event_Intelligence_Orchestrator {
                 $state['resolver_result'] = $result['data'];
             } elseif ($stage === 'timeline') {
                 $state['timeline'] = $result['data'];
+            } elseif ($stage === 'story_ranking') {
+                $state['story_ranking'] = $result['data'];
             } elseif ($stage === 'graph') {
                 $state['graph_updates'] = $result['data'];
             }
@@ -97,6 +107,8 @@ class Event_Intelligence_Orchestrator {
                 return $this->default_importance_stage($input, $state);
             case 'trust':
                 return $this->default_trust_stage($input, $state);
+            case 'story_ranking':
+                return $this->default_story_ranking_stage($input, $state);
             case 'event_identity':
                 return $this->default_event_identity_stage($input, $state);
             case 'resolver':
@@ -110,6 +122,28 @@ class Event_Intelligence_Orchestrator {
         }
     }
 
+    public function handle_story_save($post_id, $post) {
+        if (!function_exists('current_user_can') || !function_exists('update_post_meta')) {
+            return;
+        }
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+        if (!$post || ($post->post_type ?? '') !== 'story') {
+            return;
+        }
+        if (!current_user_can('edit_post', $post_id)) {
+            return;
+        }
+
+        $result = $this->run(['story_id' => intval($post_id)]);
+        update_post_meta($post_id, '_tsemou_event_intelligence_snapshot', wp_json_encode($result->to_array()));
+        update_post_meta($post_id, '_tsemou_event_intelligence_status', sanitize_text_field($result->status ?? 'failed'));
+        update_post_meta($post_id, '_tsemou_event_policy_decision', sanitize_text_field($result->policy_decisions['decision'] ?? 'review'));
+        update_post_meta($post_id, '_tsemou_event_importance_score', floatval($result->importance['score'] ?? 0));
+        update_post_meta($post_id, '_tsemou_story_ranking_score', floatval($result->story_ranking['score'] ?? 0));
+    }
+
     private function default_story_stage(array $input) {
         $story_id = absint($input['story_id'] ?? 0);
         if (!$story_id) {
@@ -121,11 +155,17 @@ class Event_Intelligence_Orchestrator {
             return ['ok' => false, 'message' => 'Story not found.'];
         }
 
+        $company_ids = [];
+        if (class_exists('\TSEMOU\Modules\CompanyEngine\Company_Engine')) {
+            $company_ids = \TSEMOU\Modules\CompanyEngine\Company_Engine::get_connected_company_ids($story->ID);
+        }
+
         return ['ok' => true, 'data' => [
             'id' => $story->ID,
             'title' => get_the_title($story->ID),
             'status' => $story->post_status,
             'content' => $story->post_content,
+            'company_ids' => $company_ids,
         ], 'confidence' => 0.6];
     }
 
@@ -142,61 +182,52 @@ class Event_Intelligence_Orchestrator {
                 $evidence_id = absint(get_post_meta($story['id'], '_tsemou_evidence_id', true));
             }
             if (!$evidence_id) {
-                return ['ok' => true, 'data' => ['id' => 0, 'summary' => 'No evidence linked.'], 'confidence' => 0.2];
+                return ['ok' => true, 'data' => ['id' => 0, 'summary' => 'No evidence linked.', 'intelligence' => null], 'confidence' => 0.2];
             }
-            return ['ok' => true, 'data' => Evidence_Engine::get($evidence_id), 'confidence' => 0.5];
+            $evidence = Evidence_Engine::get($evidence_id);
+            if (class_exists('TSEMOU\\Modules\\ProofEngine\\Proof_Engine')) {
+                $evidence['intelligence'] = Proof_Engine::get_evidence_intelligence($evidence_id);
+            }
+            return ['ok' => true, 'data' => $evidence, 'confidence' => 0.5];
         }
 
         return ['ok' => false, 'message' => 'Evidence engine unavailable.'];
     }
 
     private function default_policy_stage(array $input, array $state) {
-        if (class_exists('TSEMOU\\Modules\\PolicyEngine\\Policy_Engine')) {
-            $decision = [
-                'decision' => 'review',
-                'threshold' => floatval(Policy_Engine::get('event.identity.min_confidence', 0.6)),
-            ];
-            return ['ok' => true, 'data' => $decision, 'confidence' => 0.6];
+        if (class_exists('TSEMOU\\Modules\\EventIntelligence\\Event_Policy_Adapter')) {
+            $decision = Event_Policy_Adapter::instance()->evaluate($state);
+            return ['ok' => true, 'data' => $decision, 'confidence' => floatval($decision['confidence'] ?? 0.6)];
         }
 
-        return ['ok' => false, 'message' => 'Policy engine unavailable.'];
+        return ['ok' => false, 'message' => 'Event policy adapter unavailable.'];
     }
 
     private function default_importance_stage(array $input, array $state) {
-        $story = $state['story'] ?? [];
-        if (empty($story['id'])) {
-            return ['ok' => false, 'message' => 'Story context missing for importance evaluation.'];
+        if (class_exists('TSEMOU\\Modules\\EventIntelligence\\Event_Public_Importance_Service')) {
+            $importance = Event_Public_Importance_Service::instance()->evaluate($state);
+            return ['ok' => true, 'data' => $importance, 'confidence' => floatval($importance['confidence'] ?? 0.0)];
         }
 
-        $evidence = $state['evidence'] ?? [];
-        $evidence_id = absint($evidence['id'] ?? 0);
-        if ($evidence_id && class_exists('TSEMOU\\Modules\\ProofEngine\\Proof_Engine')) {
-            $intelligence = Proof_Engine::get_evidence_intelligence($evidence_id);
-            return ['ok' => true, 'data' => $intelligence, 'confidence' => floatval($intelligence['confidence'] ?? 0.0)];
-        }
-
-        return ['ok' => true, 'data' => ['impact' => 0.0, 'confidence' => 0.0], 'confidence' => 0.0];
+        return ['ok' => false, 'message' => 'Event public importance service unavailable.'];
     }
 
     private function default_trust_stage(array $input, array $state) {
-        $story = $state['story'] ?? [];
-        if (empty($story['id'])) {
-            return ['ok' => false, 'message' => 'Story context missing for trust evaluation.'];
+        if (class_exists('TSEMOU\\Modules\\EventIntelligence\\Event_Trust_Adapter')) {
+            $trust = Event_Trust_Adapter::instance()->evaluate($state);
+            return ['ok' => true, 'data' => $trust, 'confidence' => floatval($trust['confidence'] ?? 0.0)];
         }
 
-        if (class_exists('TSEMOU\\Modules\\TrustEngine\\Trust_Engine')) {
-            $company_ids = [];
-            if (class_exists('TSEMOU\\Modules\\CompanyEngine\\Company_Engine')) {
-                $company_ids = \TSEMOU\Modules\CompanyEngine\Company_Engine::get_connected_company_ids(intval($story['id']));
-            }
-            $score = 0.0;
-            foreach ($company_ids as $company_id) {
-                $score = max($score, floatval(Trust_Engine::recalculate_company_trust(intval($company_id))));
-            }
-            return ['ok' => true, 'data' => ['company_ids' => $company_ids, 'score' => $score], 'confidence' => 0.5];
+        return ['ok' => false, 'message' => 'Event trust adapter unavailable.'];
+    }
+
+    private function default_story_ranking_stage(array $input, array $state) {
+        if (class_exists('TSEMOU\\Modules\\EventIntelligence\\Event_Story_Ranking_Service')) {
+            $ranking = Event_Story_Ranking_Service::instance()->evaluate($state);
+            return ['ok' => true, 'data' => $ranking, 'confidence' => floatval($ranking['confidence'] ?? 0.0)];
         }
 
-        return ['ok' => false, 'message' => 'Trust engine unavailable.'];
+        return ['ok' => false, 'message' => 'Event story ranking service unavailable.'];
     }
 
     private function default_event_identity_stage(array $input, array $state) {
@@ -240,21 +271,11 @@ class Event_Intelligence_Orchestrator {
     }
 
     private function default_graph_stage(array $input, array $state) {
-        if (class_exists('\TSEMOU\Modules\KnowledgeGraph\Knowledge_Graph')) {
-            $updates = [];
-            if (!empty($state['story']['id'])) {
-                $updates[] = Knowledge_Graph::add_relationship(
-                    intval($state['story']['id']),
-                    intval($state['story']['id']),
-                    'context_only',
-                    50,
-                    ['context'],
-                    'Event intelligence orchestrator generated a context relationship.'
-                );
-            }
-            return ['ok' => true, 'data' => $updates, 'confidence' => 0.6];
+        if (class_exists('TSEMOU\\Modules\\EventIntelligence\\Event_Graph_Adapter')) {
+            $graph = Event_Graph_Adapter::instance()->apply($state);
+            return ['ok' => true, 'data' => $graph, 'confidence' => floatval($graph['confidence'] ?? 0.6)];
         }
 
-        return ['ok' => false, 'message' => 'Knowledge graph unavailable.'];
+        return ['ok' => false, 'message' => 'Event graph adapter unavailable.'];
     }
 }

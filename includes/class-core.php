@@ -52,6 +52,11 @@ class Core {
         require_once TSEMOU_CORE_PATH . 'modules/event-timeline/class-event-timeline-node.php';
         require_once TSEMOU_CORE_PATH . 'modules/event-timeline/class-event-sequence.php';
         require_once TSEMOU_CORE_PATH . 'modules/event-timeline/class-event-timeline.php';
+        require_once TSEMOU_CORE_PATH . 'modules/event-intelligence/class-event-policy-adapter.php';
+        require_once TSEMOU_CORE_PATH . 'modules/event-intelligence/class-event-public-importance-service.php';
+        require_once TSEMOU_CORE_PATH . 'modules/event-intelligence/class-event-trust-adapter.php';
+        require_once TSEMOU_CORE_PATH . 'modules/event-intelligence/class-event-story-ranking-service.php';
+        require_once TSEMOU_CORE_PATH . 'modules/event-intelligence/class-event-graph-adapter.php';
         require_once TSEMOU_CORE_PATH . 'modules/event-intelligence/class-event-intelligence-result.php';
         require_once TSEMOU_CORE_PATH . 'modules/event-intelligence/class-event-intelligence-orchestrator.php';
         require_once TSEMOU_CORE_PATH . 'modules/story/class-story-module.php';
