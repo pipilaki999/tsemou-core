@@ -52,7 +52,11 @@ class Knowledge_Graph_Update_Engine {
         $validation = self::validate_graph_payload($payload);
         $errors = array_merge($relationship_validation['errors'], $validation['errors']);
 
-        return self::build_update_result('relationship', $validation['payload'], empty($errors), $errors);
+        if (!empty($errors)) {
+            return self::build_update_result('relationship', $validation['payload'], false, $errors);
+        }
+
+        return self::commit_graph_payload($validation['payload'], 'relationship');
     }
 
     /**
@@ -141,6 +145,53 @@ class Knowledge_Graph_Update_Engine {
                 'status' => empty($errors) ? 'ready' : 'invalid'
             ]
         ];
+    }
+
+    /**
+     * Commit a validated graph payload into the existing Knowledge Graph store.
+     *
+     * @param array $payload
+     * @param string $update_type
+     * @return array
+     */
+    public static function commit_graph_payload($payload, $update_type = 'graph') {
+        $validation = self::validate_graph_payload($payload);
+        if (empty($validation['valid'])) {
+            return self::build_update_result($update_type, $validation['payload'], false, $validation['errors']);
+        }
+
+        $persisted_relationships = [];
+
+        if (class_exists('TSEMOU\\Modules\\KnowledgeGraph\\Knowledge_Graph') && method_exists('TSEMOU\\Modules\\KnowledgeGraph\\Knowledge_Graph', 'add_relationship')) {
+            foreach ($validation['payload']['relationships'] as $relationship) {
+                $relationship = is_array($relationship) ? $relationship : [];
+                $from = $relationship['from'] ?? [];
+                $to = $relationship['to'] ?? [];
+                $flags = [];
+                $meta = $relationship['meta'] ?? [];
+
+                if (isset($meta['flags']) && is_array($meta['flags'])) {
+                    $flags = $meta['flags'];
+                }
+
+                $persisted_relationships[] = Knowledge_Graph::add_relationship(
+                    intval($from['entity_id'] ?? 0),
+                    intval($to['entity_id'] ?? 0),
+                    sanitize_key($relationship['relationship_type'] ?? ''),
+                    intval(round(floatval($relationship['confidence'] ?? 1.0) * 100)),
+                    $flags,
+                    sanitize_textarea_field(wp_json_encode($meta)),
+                    'active'
+                );
+            }
+
+            Knowledge_Graph::add_log('graph_update', 'Knowledge Graph Update Engine committed graph payload.');
+        }
+
+        $validation['payload']['status'] = 'completed';
+        $validation['payload']['persisted_relationships'] = $persisted_relationships;
+
+        return self::build_update_result($update_type, $validation['payload'], true, []);
     }
 
     /**

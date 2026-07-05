@@ -249,13 +249,13 @@ class Evidence_Processing_Engine {
      */
     public static function update_graph($evidence = [], $relationships = []) {
         $payload = Knowledge_Graph_Update_Engine::build_graph_payload($evidence['entity'] ?? [], $relationships);
-        $validation = Knowledge_Graph_Update_Engine::validate_graph_payload($payload);
+        $result = Knowledge_Graph_Update_Engine::commit_graph_payload($payload, 'story_processing');
 
         return [
-            'success' => (bool) $validation['valid'],
-            'payload' => $validation['payload'],
-            'errors' => $validation['errors'],
-            'statistics' => Knowledge_Graph_Update_Engine::get_graph_statistics()
+            'success' => (bool) ($result['success'] ?? false),
+            'payload' => $result['payload'] ?? [],
+            'errors' => $result['errors'] ?? [],
+            'statistics' => $result['statistics'] ?? Knowledge_Graph_Update_Engine::get_graph_statistics()
         ];
     }
 

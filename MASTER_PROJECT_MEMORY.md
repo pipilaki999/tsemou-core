@@ -313,3 +313,26 @@ Validate the end-to-end MVT smoke path and keep Phase A acquisition stable.
 
 Current integration decision:
 Use `tsemou_proof` as the only canonical persistent evidence model for Phase C.6 and beta integration.
+
+### Phase C.6.4 Verification
+Status:
+PARTIAL
+
+Verified handoffs:
+- Discovery Orchestrator can dispatch a story-processing job
+- Evidence Processing Engine creates or updates canonical `tsemou_proof`
+- `proof_id` is returned
+- normalized relationships are created
+- Knowledge Graph Update Engine receives a graph payload for validation
+
+Known blocker before Phase D:
+- graph persistence is still service-only; the graph update engine validates payloads but does not write to a canonical graph store
+
+### Phase C.6.5 Final Handoff
+Status:
+PASS
+
+Result:
+- Evidence Processing Engine now commits the validated graph payload through the existing Knowledge Graph Update Engine
+- Knowledge Graph Update Engine reuses the existing Knowledge_Graph add/update path for canonical relationship writes
+- The last missing handoff in the MVT pipeline is now completed
