@@ -336,3 +336,11 @@ Result:
 - Evidence Processing Engine now commits the validated graph payload through the existing Knowledge Graph Update Engine
 - Knowledge Graph Update Engine reuses the existing Knowledge_Graph add/update path for canonical relationship writes
 - The last missing handoff in the MVT pipeline is now completed
+
+### v5.1.0 Production Review
+Status:
+BLOCKER CONFIRMED
+
+Blocker:
+- version consistency is still broken across the plugin header, docs, and project memory
+- the build ZIP version is not tracked in the repository
