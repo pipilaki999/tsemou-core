@@ -29,6 +29,7 @@ class Core {
         require_once TSEMOU_CORE_PATH . 'modules/company-sensor/class-company-sensor.php';
         require_once TSEMOU_CORE_PATH . 'modules/company-section-engine/class-company-section-engine.php';
         require_once TSEMOU_CORE_PATH . 'modules/evidence-engine/class-evidence-engine.php';
+        require_once TSEMOU_CORE_PATH . 'modules/evidence-processing-engine/class-evidence-processing-engine.php';
         require_once TSEMOU_CORE_PATH . 'modules/source-intelligence/class-source-intelligence-engine.php';
         require_once TSEMOU_CORE_PATH . 'modules/discovery-engine/class-discovery-engine.php';
         require_once TSEMOU_CORE_PATH . 'modules/company-intelligence/class-company-intelligence-engine.php';
@@ -79,6 +80,7 @@ class Core {
         if (class_exists('\TSEMOU\Modules\CompanySectionEngine\Company_Section_Engine') && method_exists('\TSEMOU\Modules\CompanySectionEngine\Company_Section_Engine', 'instance')) { \TSEMOU\Modules\CompanySectionEngine\Company_Section_Engine::instance(); }
         if (class_exists('\TSEMOU\Modules\DeveloperConsole\Developer_Console') && method_exists('\TSEMOU\Modules\DeveloperConsole\Developer_Console', 'instance')) { \TSEMOU\Modules\DeveloperConsole\Developer_Console::instance(); }
         if (class_exists('\TSEMOU\Modules\EvidenceEngine\Evidence_Engine') && method_exists('\TSEMOU\Modules\EvidenceEngine\Evidence_Engine', 'instance')) { \TSEMOU\Modules\EvidenceEngine\Evidence_Engine::instance(); }
+        if (class_exists('\TSEMOU\Modules\EvidenceProcessingEngine\Evidence_Processing_Engine') && method_exists('\TSEMOU\Modules\EvidenceProcessingEngine\Evidence_Processing_Engine', 'instance')) { \TSEMOU\Modules\EvidenceProcessingEngine\Evidence_Processing_Engine::instance(); }
         if (class_exists('\TSEMOU\Modules\SourceIntelligence\Source_Intelligence_Engine') && method_exists('\TSEMOU\Modules\SourceIntelligence\Source_Intelligence_Engine', 'instance')) { \TSEMOU\Modules\SourceIntelligence\Source_Intelligence_Engine::instance(); }
         if (class_exists('\TSEMOU\Modules\DiscoveryEngine\Discovery_Engine') && method_exists('\TSEMOU\Modules\DiscoveryEngine\Discovery_Engine', 'instance')) { \TSEMOU\Modules\DiscoveryEngine\Discovery_Engine::instance(); }
         if (class_exists('\TSEMOU\Modules\CompanyIntelligence\Company_Intelligence_Engine') && method_exists('\TSEMOU\Modules\CompanyIntelligence\Company_Intelligence_Engine', 'instance')) { \TSEMOU\Modules\CompanyIntelligence\Company_Intelligence_Engine::instance(); }
