@@ -13,6 +13,7 @@ class Story_Module {
         add_action('save_post_story', [$this, 'bootstrap_lifecycle_on_story_save'], 5, 2);
         add_action('save_post_story', [$this, 'save_story_meta'], 10, 2);
         add_action('save_post_story', [$this, 'trigger_event_identity_analysis'], 20, 2);
+        add_action('save_post_story', [$this, 'enqueue_story_processing_on_story_save'], 25, 2);
         add_action('tsemou_story_promoted', [$this, 'handle_story_promoted'], 10, 2);
         add_action('tsemou_living_case_updated', [$this, 'handle_living_case_updated'], 10, 2);
         add_action('tsemou_public_pages_updated', [$this, 'handle_public_pages_updated'], 10, 1);
@@ -131,6 +132,21 @@ class Story_Module {
         if (class_exists('\\TSEMOU\\Modules\\EventIdentity\\Event_Identity_Engine')) {
             \TSEMOU\Modules\EventIdentity\Event_Identity_Engine::instance()->analyze_story($post_id);
         }
+    }
+
+    public function enqueue_story_processing_on_story_save($post_id, $post) {
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+        if (!$post || $post->post_type !== 'story') return;
+
+        if (!class_exists('\\TSEMOU\\Modules\\DiscoveryOrchestrator\\Discovery_Orchestrator')) {
+            return;
+        }
+
+        \TSEMOU\Modules\DiscoveryOrchestrator\Discovery_Orchestrator::enqueue_story_processing($post_id, [
+            'source' => 'story_save',
+            'source_post_type' => 'story',
+            'source_post_status' => sanitize_key($post->post_status ?? ''),
+        ], 0);
     }
 
     public function handle_story_promoted($story_id, $payload = []) {

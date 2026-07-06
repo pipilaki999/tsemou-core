@@ -310,7 +310,7 @@ class Discovery_Orchestrator {
         $queue_key = self::make_queue_key($engine, $payload);
 
         foreach ($queue as $item) {
-            if (($item['queue_key'] ?? '') === $queue_key && in_array(($item['status'] ?? 'pending'), ['pending', 'running', 'completed'], true)) {
+            if (($item['queue_key'] ?? '') === $queue_key && in_array(($item['status'] ?? 'pending'), ['pending', 'running'], true)) {
                 return false;
             }
         }
