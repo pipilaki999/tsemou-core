@@ -708,6 +708,20 @@ class Discovery_Orchestrator {
         $importance_score = floatval($importance['score'] ?? 0);
         $trust_score = floatval($trust['score'] ?? 0);
 
+        self::emit_event('public_importance_evaluated', [
+            'story_id' => $story_id,
+            'importance_score' => $importance_score,
+            'importance_band' => sanitize_text_field($importance['band'] ?? ''),
+        ]);
+
+        self::emit_event('story_ranked', [
+            'story_id' => $story_id,
+            'score' => $score,
+            'priority' => sanitize_text_field($ranking['priority'] ?? 'low'),
+            'trust_score' => $trust_score,
+            'importance_score' => $importance_score,
+        ]);
+
         do_action('tsemou_lifecycle_stage', [
             'story_id' => $story_id,
             'stage' => 'Public Importance',
@@ -844,6 +858,9 @@ class Discovery_Orchestrator {
             'rank_priority' => sanitize_text_field($ranking['priority'] ?? 'low'),
             'promoted_at' => $now_mysql,
         ];
+
+        self::emit_event('story_promoted', $event_payload);
+        self::emit_event('living_case_updated', $event_payload);
 
         do_action('tsemou_lifecycle_stage', [
             'story_id' => $story_id,
