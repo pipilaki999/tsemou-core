@@ -15,6 +15,7 @@ class Story_Module {
         add_action('save_post_story', [$this, 'trigger_event_identity_analysis'], 20, 2);
         add_action('tsemou_story_promoted', [$this, 'handle_story_promoted'], 10, 2);
         add_action('tsemou_living_case_updated', [$this, 'handle_living_case_updated'], 10, 2);
+        add_action('tsemou_public_pages_updated', [$this, 'handle_public_pages_updated'], 10, 1);
         add_action('tsemou_lifecycle_stage', [$this, 'handle_lifecycle_stage'], 10, 1);
         // TSEMOU 3.0: root TSEMOU OS menu is registered centrally in tsemou-core.php.
     }
@@ -162,6 +163,11 @@ class Story_Module {
         $story_id = absint($story_id);
         if ($story_id <= 0) return;
 
+        $post = get_post($story_id);
+        if (!$post || $post->post_type !== 'story') return;
+
+        update_post_meta($story_id, '_tsemou_living_case_updated_at', current_time('mysql'));
+
         if (!class_exists('\\TSEMOU\\Modules\\CompanyEngine\\Company_Engine')) {
             return;
         }
@@ -171,13 +177,33 @@ class Story_Module {
             'context' => is_array($payload) ? $payload : [],
         ]);
 
-        $this->append_lifecycle_stage($story_id, 'Continuous Evolution', [
-            'source' => 'story_module',
-            'context' => ['trigger' => 'living_case_updated'],
-        ]);
-
         $company_ids = \TSEMOU\Modules\CompanyEngine\Company_Engine::get_connected_company_ids($story_id);
         do_action('tsemou_public_pages_update_requested', $story_id, $company_ids, is_array($payload) ? $payload : []);
+    }
+
+    public function handle_public_pages_updated($payload = []) {
+        if (!is_array($payload)) return;
+
+        $story_id = absint($payload['story_id'] ?? 0);
+        if ($story_id <= 0) return;
+
+        $post = get_post($story_id);
+        if (!$post || $post->post_type !== 'story') return;
+
+        $company_ids = is_array($payload['company_ids'] ?? null) ? $payload['company_ids'] : [];
+        $updated_at = sanitize_text_field($payload['updated_at'] ?? current_time('mysql'));
+
+        update_post_meta($story_id, '_tsemou_public_pages_last_updated_at', $updated_at);
+        update_post_meta($story_id, '_tsemou_public_pages_last_updated_companies', count($company_ids));
+
+        $this->append_lifecycle_stage($story_id, 'Continuous Evolution', [
+            'source' => 'story_module',
+            'context' => [
+                'trigger' => 'public_pages_updated',
+                'company_count' => count($company_ids),
+                'updated_at' => $updated_at,
+            ],
+        ]);
     }
 
     public function handle_lifecycle_stage($payload = []) {
