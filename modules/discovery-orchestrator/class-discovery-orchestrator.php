@@ -565,6 +565,15 @@ class Discovery_Orchestrator {
             'proof_id' => $payload['proof_id'],
             'relationship_count' => is_array($payload['relationships']) ? count($payload['relationships']) : 0,
         ]);
+        do_action('tsemou_lifecycle_stage', [
+            'story_id' => $story_id,
+            'stage' => 'Evidence Growth',
+            'source' => 'discovery_orchestrator',
+            'context' => [
+                'proof_id' => $payload['proof_id'],
+                'relationship_count' => is_array($payload['relationships']) ? count($payload['relationships']) : 0,
+            ],
+        ]);
 
         self::add_log('story_processing', 'Story processed into canonical evidence.', [
             'story_id' => $story_id,
@@ -618,8 +627,48 @@ class Discovery_Orchestrator {
         $state = method_exists($snapshot, 'to_array') ? $snapshot->to_array() : [];
         $ranking = is_array($state['story_ranking'] ?? null) ? $state['story_ranking'] : [];
         $importance = is_array($state['importance'] ?? null) ? $state['importance'] : [];
+        $trust = is_array($state['trust'] ?? null) ? $state['trust'] : [];
         $score = floatval($ranking['score'] ?? 0);
         $importance_score = floatval($importance['score'] ?? 0);
+        $trust_score = floatval($trust['score'] ?? 0);
+
+        do_action('tsemou_lifecycle_stage', [
+            'story_id' => $story_id,
+            'stage' => 'Trust Evaluation',
+            'source' => 'discovery_orchestrator',
+            'context' => [
+                'trust_score' => $trust_score,
+            ],
+        ]);
+
+        do_action('tsemou_lifecycle_stage', [
+            'story_id' => $story_id,
+            'stage' => 'Public Importance',
+            'source' => 'discovery_orchestrator',
+            'context' => [
+                'importance_score' => $importance_score,
+            ],
+        ]);
+
+        do_action('tsemou_lifecycle_stage', [
+            'story_id' => $story_id,
+            'stage' => 'Community Value',
+            'source' => 'discovery_orchestrator',
+            'context' => [
+                'trust_score' => $trust_score,
+                'importance_score' => $importance_score,
+            ],
+        ]);
+
+        do_action('tsemou_lifecycle_stage', [
+            'story_id' => $story_id,
+            'stage' => 'Ranking',
+            'source' => 'discovery_orchestrator',
+            'context' => [
+                'score' => $score,
+                'priority' => sanitize_text_field($ranking['priority'] ?? 'low'),
+            ],
+        ]);
 
         $top_min = class_exists('\\TSEMOU\\Modules\\PolicyEngine\\Policy_Engine')
             ? floatval(\TSEMOU\Modules\PolicyEngine\Policy_Engine::get('promotion.top_candidate_min_score', 85))
@@ -728,6 +777,17 @@ class Discovery_Orchestrator {
             'rank_priority' => sanitize_text_field($ranking['priority'] ?? 'low'),
             'promoted_at' => $now_mysql,
         ];
+
+        do_action('tsemou_lifecycle_stage', [
+            'story_id' => $story_id,
+            'stage' => 'Promotion',
+            'source' => 'discovery_orchestrator',
+            'context' => [
+                'slot' => $slot,
+                'interval_hours' => $interval_hours,
+                'score' => $score,
+            ],
+        ]);
 
         do_action('tsemou_story_promoted', $story_id, $event_payload);
         do_action('tsemou_living_case_updated', $story_id, $event_payload);

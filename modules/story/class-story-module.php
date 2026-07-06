@@ -14,6 +14,7 @@ class Story_Module {
         add_action('save_post_story', [$this, 'trigger_event_identity_analysis'], 20, 2);
         add_action('tsemou_story_promoted', [$this, 'handle_story_promoted'], 10, 2);
         add_action('tsemou_living_case_updated', [$this, 'handle_living_case_updated'], 10, 2);
+        add_action('tsemou_lifecycle_stage', [$this, 'handle_lifecycle_stage'], 10, 1);
         // TSEMOU 3.0: root TSEMOU OS menu is registered centrally in tsemou-core.php.
     }
     public function add_os_menu() {
@@ -107,6 +108,8 @@ class Story_Module {
             $relationships = isset($_POST['tsemou_company_relationships']) ? (array) $_POST['tsemou_company_relationships'] : [];
             \TSEMOU\Modules\CompanyEngine\Company_Engine::save_company_relationships($post_id, $relationships);
         }
+
+        $this->ensure_initial_lifecycle_stages($post_id);
     }
 
     public function trigger_event_identity_analysis($post_id, $post) {
@@ -138,6 +141,11 @@ class Story_Module {
                 update_post_meta($story_id, '_tsemou_story_ranking_score', floatval($payload['score']));
             }
         }
+
+        $this->append_lifecycle_stage($story_id, 'Living Case', [
+            'source' => 'story_module',
+            'context' => is_array($payload) ? $payload : [],
+        ]);
     }
 
     public function handle_living_case_updated($story_id, $payload = []) {
@@ -148,7 +156,59 @@ class Story_Module {
             return;
         }
 
+        $this->append_lifecycle_stage($story_id, 'Knowledge Graph Update', [
+            'source' => 'story_module',
+            'context' => is_array($payload) ? $payload : [],
+        ]);
+
+        $this->append_lifecycle_stage($story_id, 'Continuous Evolution', [
+            'source' => 'story_module',
+            'context' => ['trigger' => 'living_case_updated'],
+        ]);
+
         $company_ids = \TSEMOU\Modules\CompanyEngine\Company_Engine::get_connected_company_ids($story_id);
         do_action('tsemou_public_pages_update_requested', $story_id, $company_ids, is_array($payload) ? $payload : []);
+    }
+
+    public function handle_lifecycle_stage($payload = []) {
+        if (!is_array($payload)) return;
+
+        $story_id = absint($payload['story_id'] ?? 0);
+        $stage = sanitize_text_field($payload['stage'] ?? '');
+        if ($story_id <= 0 || $stage === '') return;
+
+        $this->append_lifecycle_stage($story_id, $stage, [
+            'source' => sanitize_text_field($payload['source'] ?? 'runtime'),
+            'context' => is_array($payload['context'] ?? null) ? $payload['context'] : [],
+        ]);
+    }
+
+    private function ensure_initial_lifecycle_stages($story_id) {
+        $history = get_post_meta($story_id, '_tsemou_lifecycle_history', true);
+        if (!is_array($history) || empty($history)) {
+            $this->append_lifecycle_stage($story_id, 'Submission', ['source' => 'story_module']);
+            $this->append_lifecycle_stage($story_id, 'Seed', ['source' => 'story_module']);
+            $this->append_lifecycle_stage($story_id, 'Community Feed', ['source' => 'story_module']);
+        }
+    }
+
+    private function append_lifecycle_stage($story_id, $stage, $meta = []) {
+        $history = get_post_meta($story_id, '_tsemou_lifecycle_history', true);
+        if (!is_array($history)) $history = [];
+
+        $entry = [
+            'stage' => sanitize_text_field($stage),
+            'at' => current_time('mysql'),
+            'meta' => is_array($meta) ? $meta : [],
+        ];
+
+        $history[] = $entry;
+        if (count($history) > 200) {
+            $history = array_slice($history, -200);
+        }
+
+        update_post_meta($story_id, '_tsemou_lifecycle_history', $history);
+        update_post_meta($story_id, '_tsemou_lifecycle_current_stage', sanitize_text_field($stage));
+        update_post_meta($story_id, '_tsemou_lifecycle_updated_at', $entry['at']);
     }
 }
