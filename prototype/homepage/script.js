@@ -57,7 +57,7 @@ const defaultCompanyLeaders = {
 let risingStories = [...defaultRisingStories];
 let companyLeaders = JSON.parse(JSON.stringify(defaultCompanyLeaders));
 
-const stories = [
+const defaultStories = [
   {
     importance: "critical",
     updated: "12m ago",
@@ -223,6 +223,8 @@ const stories = [
     image: "https://picsum.photos/seed/tsemou-story-12/960/540"
   }
 ];
+
+let stories = [...defaultStories];
 
 const newsItems = [
   {
@@ -409,6 +411,66 @@ async function loadCommunityRankingsFromBackend() {
   }
 }
 
+function estimateImportance(post) {
+  const comments = Number.parseInt(post?.comment_count || 0, 10);
+  if (comments >= 8) return "critical";
+  if (comments >= 4) return "high";
+  return "elevated";
+}
+
+function estimateEvidenceCount(post) {
+  const textLength = decodeHtml(post?.content?.rendered || "").length;
+  return Math.max(1, Math.min(35, Math.floor(textLength / 220)));
+}
+
+function mapStoryPostToCard(post) {
+  const title = decodeHtml(post?.title?.rendered || "Untitled story");
+  const summaryText = decodeHtml(post?.excerpt?.rendered || post?.content?.rendered || "");
+  const summary = summaryText || "No summary available yet.";
+
+  return {
+    id: post?.id || 0,
+    link: post?.link || "#",
+    importance: estimateImportance(post),
+    updated: toShortRelativeTime(post?.modified || post?.date),
+    title,
+    summary,
+    evidence: estimateEvidenceCount(post),
+    peopleAffected: "Community-reported",
+    status: "Evolving",
+    impact: {
+      human: 0.7,
+      environmental: 0.6,
+      economic: 0.6,
+      social: 0.65
+    },
+    caseTimeline: ["Submission", "Evidence Growth", "Trust Evaluation", "Promotion", "Living Case"],
+    whyMatters: [
+      "Community evidence continues to shape this case.",
+      "Trust and public importance are recalculated as updates arrive."
+    ],
+    companies: "Connected companies",
+    countries: "Global",
+    solutions: Math.max(1, Math.min(9, Math.floor(summary.length / 180))),
+    timeline: "Submission -> Evidence Growth -> Trust Evaluation -> Promotion",
+    image: `https://picsum.photos/seed/tsemou-story-${post?.id || 0}/960/540`
+  };
+}
+
+async function loadLivingCasesFromBackend() {
+  const storyPosts = await fetchWpCollection("story", {
+    per_page: 24,
+    status: "publish",
+    orderby: "modified",
+    order: "desc",
+    _fields: "id,slug,title,excerpt,content,date,modified,link,comment_count"
+  });
+
+  if (storyPosts.length > 0) {
+    stories = storyPosts.map(mapStoryPostToCard);
+  }
+}
+
 function renderCommunity() {
   const rankTone = (rank) => {
     if (rank === 1) return "gold";
@@ -489,7 +551,7 @@ function storyTemplate(story) {
         <div class="story-topline">
           <span class="importance ${story.importance}">${story.importance}</span>
         </div>
-        <h3 class="story-title">${story.title}</h3>
+        <h3 class="story-title"><a href="${story.link || "#"}">${story.title}</a></h3>
         <p class="story-summary">${story.summary}</p>
         <div class="story-meta">
           <div class="meta-row"><span class="meta-label">Evidence</span><span>${story.evidence} verified items</span></div>
@@ -516,7 +578,7 @@ function featuredStoryTemplate(story) {
         <div class="story-topline">
           <span class="importance ${story.importance}">${story.importance}</span>
         </div>
-        <h3 class="story-title">${story.title}</h3>
+        <h3 class="story-title"><a href="${story.link || "#"}">${story.title}</a></h3>
         <p class="story-summary">${story.summary}</p>
 
         <section class="featured-dashboard" aria-label="Story dashboard">
@@ -641,6 +703,7 @@ chips.forEach((chip) => {
 
 async function initializeHomepage() {
   await loadCommunityRankingsFromBackend();
+  await loadLivingCasesFromBackend();
   renderCommunity();
   renderStories();
   renderNews();
