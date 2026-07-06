@@ -63,9 +63,121 @@ if ($missing.Count -gt 0) {
     throw ('Missing required packaging paths: ' + ($missing -join ', '))
 }
 
-Compress-Archive -Path $stageDir -DestinationPath $zipPath -Force
-
+Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
+$stageDirNormalized = [System.IO.Path]::GetFullPath($stageDir)
+$stagePrefix = $stageDirNormalized.TrimEnd('\') + '\'
+$createdEntries = @{}
+
+function New-ZipEntryName {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $FullPath,
+        [switch] $IsDirectory
+    )
+
+    $fullPathNormalized = [System.IO.Path]::GetFullPath($FullPath)
+    if (-not $fullPathNormalized.StartsWith($stagePrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Path is outside staging directory: $FullPath"
+    }
+
+    $relative = $fullPathNormalized.Substring($stagePrefix.Length).Replace('\', '/')
+    $entryName = if ($relative) { "$pluginFolderName/$relative" } else { $pluginFolderName }
+
+    if ($IsDirectory -and -not $entryName.EndsWith('/')) {
+        $entryName += '/'
+    }
+
+    return $entryName
+}
+
+function Add-ZipDirectoryEntry {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.IO.Compression.ZipArchive] $Archive,
+        [Parameter(Mandatory = $true)]
+        [string] $EntryName
+    )
+
+    if ($createdEntries.ContainsKey($EntryName)) {
+        return
+    }
+
+    $null = $Archive.CreateEntry($EntryName)
+    $createdEntries[$EntryName] = $true
+}
+
+function Add-ZipFileEntry {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.IO.Compression.ZipArchive] $Archive,
+        [Parameter(Mandatory = $true)]
+        [string] $SourcePath,
+        [Parameter(Mandatory = $true)]
+        [string] $EntryName
+    )
+
+    if ($createdEntries.ContainsKey($EntryName)) {
+        return
+    }
+
+    $entry = $Archive.CreateEntry($EntryName, [System.IO.Compression.CompressionLevel]::Optimal)
+    $entryStream = $entry.Open()
+    $fileStream = [System.IO.File]::OpenRead($SourcePath)
+
+    try {
+        $fileStream.CopyTo($entryStream)
+    }
+    finally {
+        $fileStream.Dispose()
+        $entryStream.Dispose()
+    }
+
+    $createdEntries[$EntryName] = $true
+}
+
+$zipArchive = [System.IO.Compression.ZipFile]::Open($zipPath, [System.IO.Compression.ZipArchiveMode]::Create)
+
+try {
+    Add-ZipDirectoryEntry -Archive $zipArchive -EntryName "$pluginFolderName/"
+
+    $mainPluginFile = Join-Path $stageDir 'tsemou-core.php'
+    Add-ZipFileEntry -Archive $zipArchive -SourcePath $mainPluginFile -EntryName "$pluginFolderName/tsemou-core.php"
+
+    foreach ($topDir in @('assets', 'config', 'includes', 'modules', 'storage')) {
+        $dirPath = Join-Path $stageDir $topDir
+        if (Test-Path $dirPath) {
+            Add-ZipDirectoryEntry -Archive $zipArchive -EntryName "$pluginFolderName/$topDir/"
+        }
+    }
+
+    $rootFiles = Get-ChildItem -Path $stageDir -File | Sort-Object Name
+    foreach ($file in $rootFiles) {
+        if ($file.Name -eq 'tsemou-core.php') {
+            continue
+        }
+
+        Add-ZipFileEntry -Archive $zipArchive -SourcePath $file.FullName -EntryName (New-ZipEntryName -FullPath $file.FullName)
+    }
+
+    $allDirectories = Get-ChildItem -Path $stageDir -Directory -Recurse | Sort-Object FullName
+    foreach ($directory in $allDirectories) {
+        Add-ZipDirectoryEntry -Archive $zipArchive -EntryName (New-ZipEntryName -FullPath $directory.FullName -IsDirectory)
+    }
+
+    $allFiles = Get-ChildItem -Path $stageDir -File -Recurse | Sort-Object FullName
+    foreach ($file in $allFiles) {
+        if ($file.FullName -eq $mainPluginFile) {
+            continue
+        }
+
+        Add-ZipFileEntry -Archive $zipArchive -SourcePath $file.FullName -EntryName (New-ZipEntryName -FullPath $file.FullName)
+    }
+}
+finally {
+    $zipArchive.Dispose()
+}
+
 $zip = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
 $entries = $zip.Entries | Select-Object -ExpandProperty FullName
 $zip.Dispose()
