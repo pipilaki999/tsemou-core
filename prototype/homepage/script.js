@@ -364,6 +364,29 @@ function deriveCompanyMentions(storyPosts) {
   };
 }
 
+function normalizeTrustScore(raw) {
+  const value = Number.parseFloat(raw);
+  if (!Number.isFinite(value)) return null;
+  return Math.max(0, Math.min(10, value));
+}
+
+function extractTrustScoreFromCompanyPost(post) {
+  const directMeta = post?.meta?._tsemou_trust_engine_score;
+  const altMeta = post?._tsemou_trust_engine_score;
+  const customFields = post?.custom_fields?._tsemou_trust_engine_score;
+  const acfField = post?.acf?._tsemou_trust_engine_score || post?.acf?.tsemou_trust_engine_score;
+  const contentText = decodeHtml(post?.content?.rendered || "");
+  const trustMatch = contentText.match(/trust\s*(?:score)?\s*[:\-]?\s*([0-9]+(?:\.[0-9]+)?)/i);
+
+  return (
+    normalizeTrustScore(directMeta) ??
+    normalizeTrustScore(altMeta) ??
+    normalizeTrustScore(Array.isArray(customFields) ? customFields[0] : customFields) ??
+    normalizeTrustScore(acfField) ??
+    normalizeTrustScore(trustMatch?.[1])
+  );
+}
+
 async function loadCommunityRankingsFromBackend() {
   const storyPosts = await fetchWpCollection("story", {
     per_page: 12,
@@ -395,12 +418,25 @@ async function loadCommunityRankingsFromBackend() {
       const ranked = companyPosts
         .map((post, index) => ({
           name: decodeHtml(post?.title?.rendered || "Unnamed company"),
-          metric: `${toShortRelativeTime(post?.modified)} update`,
+          trustScore: extractTrustScoreFromCompanyPost(post),
           actionUrl: post?.link ? `${post.link}#tsemou-community-vote` : "#",
           freshness: new Date(post?.modified || 0).getTime() || 0,
           tie: index
         }))
-        .sort((a, b) => b.freshness - a.freshness || a.tie - b.tie);
+        .map((company) => ({
+          ...company,
+          metric: company.trustScore !== null
+            ? `Trust ${company.trustScore.toFixed(1)}/10`
+            : `${toShortRelativeTime(company.freshness ? new Date(company.freshness).toISOString() : "")} update`
+        }))
+        .sort((a, b) => {
+          if (a.trustScore !== null && b.trustScore !== null) {
+            return b.trustScore - a.trustScore || b.freshness - a.freshness;
+          }
+          if (a.trustScore !== null) return -1;
+          if (b.trustScore !== null) return 1;
+          return b.freshness - a.freshness || a.tie - b.tie;
+        });
 
       communityActionUrl = ranked[0]?.actionUrl || communityActionUrl;
 
