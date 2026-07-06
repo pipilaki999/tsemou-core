@@ -311,6 +311,31 @@ async function fetchWpCollection(endpoint, query = {}) {
   }
 }
 
+async function fetchWpCollectionTotals(endpoint, query = {}) {
+  if (!wpApiBase) return { items: [], total: 0, available: false };
+
+  const params = new URLSearchParams(query);
+  const url = `${wpApiBase}/${endpoint}${params.toString() ? `?${params.toString()}` : ""}`;
+
+  try {
+    const response = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!response.ok) return { items: [], total: 0, available: false };
+
+    const data = await response.json();
+    const items = Array.isArray(data) ? data : [];
+    const totalHeader = response.headers.get("X-WP-Total");
+    const total = Number.parseInt(totalHeader || `${items.length}`, 10);
+
+    return {
+      items,
+      total: Number.isFinite(total) ? total : items.length,
+      available: true
+    };
+  } catch (error) {
+    return { items: [], total: 0, available: false };
+  }
+}
+
 function decodeHtml(input) {
   const parser = new DOMParser();
   const parsed = parser.parseFromString(input || "", "text/html");
@@ -576,6 +601,36 @@ async function loadCommunityFeedFromBackend() {
   }
 }
 
+function updateHeroBrief(stats) {
+  const points = document.querySelectorAll(".brief-points li");
+  if (!points || points.length < 4) return;
+
+  points[0].textContent = `${stats.cases} Cases evolved`;
+  points[1].textContent = `${stats.evidence} New Evidence`;
+  points[2].textContent = `${stats.companies} Companies tracked`;
+  points[3].textContent = `${stats.graphLinks} Knowledge Graph links`;
+}
+
+async function loadKnowledgeGraphStatsFromBackend() {
+  const [storiesTotal, evidenceTotal, companiesTotal, relationTotal] = await Promise.all([
+    fetchWpCollectionTotals("story", { per_page: 1, status: "publish" }),
+    fetchWpCollectionTotals("tsemou_proof", { per_page: 1, status: "publish" }),
+    fetchWpCollectionTotals("company", { per_page: 1, status: "publish" }),
+    fetchWpCollectionTotals("tsemou_relation", { per_page: 1, status: "publish" })
+  ]);
+
+  const estimatedGraphLinks = relationTotal.available
+    ? relationTotal.total
+    : Math.max(evidenceTotal.total, storiesTotal.total);
+
+  updateHeroBrief({
+    cases: storiesTotal.total,
+    evidence: evidenceTotal.total,
+    companies: companiesTotal.available ? companiesTotal.total : 0,
+    graphLinks: estimatedGraphLinks
+  });
+}
+
 function renderCommunity() {
   const rankTone = (rank) => {
     if (rank === 1) return "gold";
@@ -823,6 +878,7 @@ async function initializeHomepage() {
   await loadCommunityRankingsFromBackend();
   await loadLivingCasesFromBackend();
   await loadCommunityFeedFromBackend();
+  await loadKnowledgeGraphStatsFromBackend();
   renderCommunity();
   renderStories();
   renderNews();
