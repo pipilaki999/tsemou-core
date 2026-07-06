@@ -10,6 +10,7 @@ class Story_Module {
     private function __construct() {
         add_action('init', [$this, 'register_story_cpt']);
         add_action('add_meta_boxes', [$this, 'add_story_meta_boxes']);
+        add_action('save_post_story', [$this, 'bootstrap_lifecycle_on_story_save'], 5, 2);
         add_action('save_post_story', [$this, 'save_story_meta'], 10, 2);
         add_action('save_post_story', [$this, 'trigger_event_identity_analysis'], 20, 2);
         add_action('tsemou_story_promoted', [$this, 'handle_story_promoted'], 10, 2);
@@ -110,23 +111,15 @@ class Story_Module {
         }
 
         $this->ensure_initial_lifecycle_stages($post_id);
+        $this->sync_archive_stage($post_id);
+    }
 
-        $story_status = sanitize_key((string) get_post_meta($post_id, '_tsemou_status', true));
-        if ($story_status === 'archived') {
-            $current_stage = sanitize_text_field((string) get_post_meta($post_id, '_tsemou_lifecycle_current_stage', true));
-            if ($current_stage !== 'Historical Archive') {
-                $this->append_lifecycle_stage($post_id, 'Historical Archive', [
-                    'source' => 'story_module',
-                    'context' => ['status' => 'archived'],
-                ]);
+    public function bootstrap_lifecycle_on_story_save($post_id, $post) {
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+        if (!$post || $post->post_type !== 'story') return;
 
-                do_action('tsemou_story_archived', $post_id, [
-                    'story_id' => absint($post_id),
-                    'status' => 'archived',
-                    'archived_at' => current_time('mysql'),
-                ]);
-            }
-        }
+        $this->ensure_initial_lifecycle_stages($post_id);
+        $this->sync_archive_stage($post_id);
     }
 
     public function trigger_event_identity_analysis($post_id, $post) {
@@ -207,6 +200,25 @@ class Story_Module {
             $this->append_lifecycle_stage($story_id, 'Seed', ['source' => 'story_module']);
             $this->append_lifecycle_stage($story_id, 'Community Feed', ['source' => 'story_module']);
         }
+    }
+
+    private function sync_archive_stage($story_id) {
+        $story_status = sanitize_key((string) get_post_meta($story_id, '_tsemou_status', true));
+        if ($story_status !== 'archived') return;
+
+        $current_stage = sanitize_text_field((string) get_post_meta($story_id, '_tsemou_lifecycle_current_stage', true));
+        if ($current_stage === 'Historical Archive') return;
+
+        $this->append_lifecycle_stage($story_id, 'Historical Archive', [
+            'source' => 'story_module',
+            'context' => ['status' => 'archived'],
+        ]);
+
+        do_action('tsemou_story_archived', $story_id, [
+            'story_id' => absint($story_id),
+            'status' => 'archived',
+            'archived_at' => current_time('mysql'),
+        ]);
     }
 
     private function append_lifecycle_stage($story_id, $stage, $meta = []) {
