@@ -110,6 +110,23 @@ class Story_Module {
         }
 
         $this->ensure_initial_lifecycle_stages($post_id);
+
+        $story_status = sanitize_key((string) get_post_meta($post_id, '_tsemou_status', true));
+        if ($story_status === 'archived') {
+            $current_stage = sanitize_text_field((string) get_post_meta($post_id, '_tsemou_lifecycle_current_stage', true));
+            if ($current_stage !== 'Historical Archive') {
+                $this->append_lifecycle_stage($post_id, 'Historical Archive', [
+                    'source' => 'story_module',
+                    'context' => ['status' => 'archived'],
+                ]);
+
+                do_action('tsemou_story_archived', $post_id, [
+                    'story_id' => absint($post_id),
+                    'status' => 'archived',
+                    'archived_at' => current_time('mysql'),
+                ]);
+            }
+        }
     }
 
     public function trigger_event_identity_analysis($post_id, $post) {
