@@ -12,6 +12,8 @@ class Story_Module {
         add_action('add_meta_boxes', [$this, 'add_story_meta_boxes']);
         add_action('save_post_story', [$this, 'save_story_meta'], 10, 2);
         add_action('save_post_story', [$this, 'trigger_event_identity_analysis'], 20, 2);
+        add_action('tsemou_story_promoted', [$this, 'handle_story_promoted'], 10, 2);
+        add_action('tsemou_living_case_updated', [$this, 'handle_living_case_updated'], 10, 2);
         // TSEMOU 3.0: root TSEMOU OS menu is registered centrally in tsemou-core.php.
     }
     public function add_os_menu() {
@@ -115,5 +117,38 @@ class Story_Module {
         if (class_exists('\\TSEMOU\\Modules\\EventIdentity\\Event_Identity_Engine')) {
             \TSEMOU\Modules\EventIdentity\Event_Identity_Engine::instance()->analyze_story($post_id);
         }
+    }
+
+    public function handle_story_promoted($story_id, $payload = []) {
+        $story_id = absint($story_id);
+        if ($story_id <= 0) return;
+
+        $post = get_post($story_id);
+        if (!$post || $post->post_type !== 'story') return;
+
+        $now = current_time('mysql');
+        update_post_meta($story_id, '_tsemou_living_case_state', 'active');
+        update_post_meta($story_id, '_tsemou_living_case_updated_at', $now);
+
+        if (is_array($payload)) {
+            if (isset($payload['slot'])) {
+                update_post_meta($story_id, '_tsemou_promotion_candidate_slot', sanitize_text_field($payload['slot']));
+            }
+            if (isset($payload['score'])) {
+                update_post_meta($story_id, '_tsemou_story_ranking_score', floatval($payload['score']));
+            }
+        }
+    }
+
+    public function handle_living_case_updated($story_id, $payload = []) {
+        $story_id = absint($story_id);
+        if ($story_id <= 0) return;
+
+        if (!class_exists('\\TSEMOU\\Modules\\CompanyEngine\\Company_Engine')) {
+            return;
+        }
+
+        $company_ids = \TSEMOU\Modules\CompanyEngine\Company_Engine::get_connected_company_ids($story_id);
+        do_action('tsemou_public_pages_update_requested', $story_id, $company_ids, is_array($payload) ? $payload : []);
     }
 }

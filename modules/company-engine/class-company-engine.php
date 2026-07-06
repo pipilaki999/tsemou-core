@@ -13,6 +13,7 @@ class Company_Engine {
     private function __construct() {
         add_action('add_meta_boxes', [$this, 'add_company_meta_boxes']);
         add_action('save_post_company', [$this, 'save_company_meta'], 10, 2);
+        add_action('tsemou_public_pages_update_requested', [$this, 'handle_public_pages_update_requested'], 10, 3);
         add_shortcode('tsemou_company_hero', [$this, 'shortcode_company_hero']);
         add_shortcode('tsemou_company_stats', [$this, 'shortcode_company_stats']);
         add_shortcode('tsemou_company_summary', [$this, 'shortcode_company_summary']);
@@ -26,6 +27,27 @@ class Company_Engine {
         add_shortcode('tsemou_related_articles_pro', [$this, 'shortcode_enhanced_related_articles']);
         add_action('wp_footer', [$this, 'render_related_articles_footer_safe'], 20);
         add_action('template_redirect', [$this, 'start_company_template_buffer'], 1);
+    }
+
+    public function handle_public_pages_update_requested($story_id, $company_ids = [], $payload = []) {
+        $story_id = absint($story_id);
+        if ($story_id <= 0) return;
+
+        if (!is_array($company_ids)) $company_ids = [];
+        $company_ids = array_values(array_unique(array_filter(array_map('absint', $company_ids))));
+        $updated_at = current_time('mysql');
+
+        foreach ($company_ids as $company_id) {
+            update_post_meta($company_id, '_tsemou_public_page_last_refresh', $updated_at);
+            update_post_meta($company_id, '_tsemou_public_page_last_story', $story_id);
+        }
+
+        do_action('tsemou_public_pages_updated', [
+            'story_id' => $story_id,
+            'company_ids' => $company_ids,
+            'updated_at' => $updated_at,
+            'context' => is_array($payload) ? $payload : [],
+        ]);
     }
 
     public static function get_existing_companies() {
