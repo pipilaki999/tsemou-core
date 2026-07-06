@@ -560,6 +560,54 @@ class Discovery_Orchestrator {
         $payload['relationships'] = $result['relationships'] ?? [];
         $payload['graph'] = $result['graph'] ?? [];
 
+        $validation_warnings = [];
+        $validation_score = 0;
+        if ($payload['proof_id'] > 0 && class_exists('\\TSEMOU\\Modules\\EvidenceEngine\\Evidence_Engine')) {
+            $normalized = \TSEMOU\Modules\EvidenceEngine\Evidence_Engine::get($payload['proof_id']);
+            $validation_warnings = is_array($normalized['warnings'] ?? null) ? $normalized['warnings'] : [];
+            $validation_score = max(0, 100 - (count($validation_warnings) * 20));
+            $payload['evidence_validation'] = [
+                'score' => $validation_score,
+                'warnings' => $validation_warnings,
+            ];
+
+            self::emit_event('evidence_validated', [
+                'story_id' => $story_id,
+                'proof_id' => $payload['proof_id'],
+                'validation_score' => $validation_score,
+                'warning_count' => count($validation_warnings),
+            ]);
+        }
+
+        $trust_updates = [];
+        if ($payload['proof_id'] > 0 && class_exists('\\TSEMOU\\Modules\\TrustEngine\\Trust_Engine')) {
+            $company_ids = \TSEMOU\Modules\TrustEngine\Trust_Engine::get_company_ids_for_evidence($payload['proof_id']);
+            foreach ($company_ids as $company_id) {
+                $company_id = absint($company_id);
+                if ($company_id <= 0) continue;
+                $trust_updates[$company_id] = \TSEMOU\Modules\TrustEngine\Trust_Engine::recalculate_company_trust($company_id);
+            }
+
+            if (!empty($trust_updates)) {
+                self::emit_event('trust_updated', [
+                    'story_id' => $story_id,
+                    'proof_id' => $payload['proof_id'],
+                    'company_count' => count($trust_updates),
+                    'company_scores' => $trust_updates,
+                ]);
+
+                do_action('tsemou_lifecycle_stage', [
+                    'story_id' => $story_id,
+                    'stage' => 'Trust Evaluation',
+                    'source' => 'discovery_orchestrator',
+                    'context' => [
+                        'company_count' => count($trust_updates),
+                        'validation_score' => $validation_score,
+                    ],
+                ]);
+            }
+        }
+
         self::emit_event('evidence_created', [
             'story_id' => $story_id,
             'proof_id' => $payload['proof_id'],
@@ -631,15 +679,6 @@ class Discovery_Orchestrator {
         $score = floatval($ranking['score'] ?? 0);
         $importance_score = floatval($importance['score'] ?? 0);
         $trust_score = floatval($trust['score'] ?? 0);
-
-        do_action('tsemou_lifecycle_stage', [
-            'story_id' => $story_id,
-            'stage' => 'Trust Evaluation',
-            'source' => 'discovery_orchestrator',
-            'context' => [
-                'trust_score' => $trust_score,
-            ],
-        ]);
 
         do_action('tsemou_lifecycle_stage', [
             'story_id' => $story_id,
