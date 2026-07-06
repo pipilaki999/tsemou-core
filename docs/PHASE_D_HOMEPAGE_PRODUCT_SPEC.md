@@ -255,3 +255,92 @@ Homepage success criteria for early product validation:
 - homepage avoids clickbait, rage bait, and gossip-first behavior patterns
 - center feed consistently prioritizes socially important, evidence-backed stories
 - right stream preserves daily habit relevance without dominating the page mission
+
+## 14. Community Engine - Seed to Living Case System
+
+### Product Decision
+
+TSEMOU Community Engine defines how public submissions become mature civic cases.
+
+Users can submit:
+- Stories
+- Posts
+- Evidence
+- Questions
+- Corrections
+- Solutions
+- general information
+
+All submissions first appear as Community Feed items in the right column.
+
+The right column is not a simple chronological stream. It is a live repeated flow ranked by importance and popularity signals.
+
+Each feed item can receive:
+- TSEMIT
+- UNTSEMIT
+- comments
+- added evidence
+- discussion
+- support
+- user credibility signals
+
+The objective is not likes. The objective is helping important stories rise.
+
+### Seed Lifecycle
+
+Each community submission is treated as a Seed with this lifecycle:
+
+1. Seed
+2. Growing
+3. Trending
+4. Rising
+5. Living Case
+6. Global Case
+
+### Column Logic
+
+System interpretation by column:
+- LEFT = what is rising
+- RIGHT = what is being created now
+- CENTER = what has matured into Living Case
+
+Left column shows Community Rankings for Seeds/Stories rising in value.
+
+Right column shows live community activity and active submissions.
+
+Center column shows promoted Living Cases that have matured beyond raw submission state.
+
+### Promotion Rule (Initial Product Concept)
+
+Top ranked community items can be promoted into the center Living Case feed.
+
+Initial visibility rotation:
+- #1 ranked item: promoted/surfaced every 1 hour
+- #2 ranked item: promoted/surfaced every 2 hours
+- #3 ranked item: promoted/surfaced every 4 hours
+
+This is an initial product rule, not the final ranking algorithm.
+
+### Collective Value Principle
+
+A story must not rise from popularity alone. It must rise from collective value.
+
+Community Value may include:
+- TSEMIT count
+- UNTSEMIT count
+- evidence added
+- number of unique participants
+- comment quality
+- user credibility
+- freshness
+- growth velocity
+- social importance
+- source reliability
+
+### Scope Clarification
+
+This section is product blueprint documentation only.
+
+No backend logic is implemented in this step.
+
+Existing UI baseline decisions remain preserved.

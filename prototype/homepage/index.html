@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TSEMOU Homepage Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header" aria-label="Primary">
+    <div class="header-inner">
+      <a class="logo" href="#" aria-label="TSEMOU home">
+        <span class="logo-mark">T</span>
+        <span class="logo-text">TSEMOU</span>
+      </a>
+      <nav class="header-nav" aria-label="Top actions">
+        <a href="#topics">Topics</a>
+        <a href="#" class="submit-link">Submit</a>
+        <button class="ghost-btn" type="button" aria-label="Switch language">EN</button>
+        <button class="profile-btn" type="button" aria-label="Open profile">Profile</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <h1 id="hero-title">
+          <span>Good Morning.</span>
+        </h1>
+        <p class="hero-subtitle">Here's what changed.</p>
+        <p class="hero-identity">SEE • FEEL • FIX</p>
+
+        <section class="brief-block" aria-label="Today's brief">
+          <h2>TODAY</h2>
+          <ul class="brief-points">
+            <li>12 Cases evolved</li>
+            <li>41 New Evidence</li>
+            <li>7 Companies changed</li>
+            <li>9 Community actions</li>
+          </ul>
+        </section>
+
+        <section class="pulse-block" aria-label="World pulse">
+          <h2>WORLD PULSE</h2>
+          <ul>
+            <li><span>Humanitarian</span><span class="pulse up">Escalating</span></li>
+            <li><span>Environment</span><span class="pulse up">Improving</span></li>
+            <li><span>Corporate Responsibility</span><span class="pulse down">Declining</span></li>
+            <li><span>Public Trust</span><span class="pulse down">Under Pressure</span></li>
+            <li><span>Community Action</span><span class="pulse up">Growing</span></li>
+            <li><span>Climate</span><span class="pulse steady">Stable</span></li>
+          </ul>
+        </section>
+      </div>
+      <form class="hero-search" role="search" aria-label="Search living stories">
+        <label for="heroSearch" class="sr-only">Search living stories</label>
+        <input id="heroSearch" type="search" placeholder="Search living stories, evidence, people, companies" autocomplete="off">
+      </form>
+      <p class="scroll-brief">Scroll to understand.</p>
+    </section>
+
+    <div class="homepage-grid">
+      <aside class="left-column" aria-label="Community Intelligence">
+        <div class="column-title-wrap">
+          <h2>Community Intelligence</h2>
+        </div>
+        <div id="communitySections"></div>
+      </aside>
+
+      <section class="center-column" aria-label="Living Stories Feed">
+        <div class="column-title-wrap">
+          <p class="today-matters">TODAY MATTERS</p>
+        </div>
+        <div id="storyFeed" class="story-feed"></div>
+      </section>
+
+      <aside class="right-column" aria-label="Live News Stream">
+        <div class="column-title-wrap">
+          <h2>Live News Stream</h2>
+          <p>Fast scan. Chronological flow.</p>
+        </div>
+        <div id="liveNews" class="live-news"></div>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p>TSEMOU prototype. Visual exploration only.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
