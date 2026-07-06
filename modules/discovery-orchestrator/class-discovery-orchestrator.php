@@ -560,6 +560,15 @@ class Discovery_Orchestrator {
         $payload['relationships'] = $result['relationships'] ?? [];
         $payload['graph'] = $result['graph'] ?? [];
 
+        $relationship_count = is_array($payload['relationships']) ? count($payload['relationships']) : 0;
+        if ($relationship_count > 0) {
+            self::emit_event('entity_linked', [
+                'story_id' => $story_id,
+                'proof_id' => $payload['proof_id'],
+                'relationship_count' => $relationship_count,
+            ]);
+        }
+
         $validation_warnings = [];
         $validation_score = 0;
         if ($payload['proof_id'] > 0 && class_exists('\\TSEMOU\\Modules\\EvidenceEngine\\Evidence_Engine')) {
@@ -611,7 +620,7 @@ class Discovery_Orchestrator {
         self::emit_event('evidence_created', [
             'story_id' => $story_id,
             'proof_id' => $payload['proof_id'],
-            'relationship_count' => is_array($payload['relationships']) ? count($payload['relationships']) : 0,
+            'relationship_count' => $relationship_count,
         ]);
         do_action('tsemou_lifecycle_stage', [
             'story_id' => $story_id,
@@ -619,9 +628,28 @@ class Discovery_Orchestrator {
             'source' => 'discovery_orchestrator',
             'context' => [
                 'proof_id' => $payload['proof_id'],
-                'relationship_count' => is_array($payload['relationships']) ? count($payload['relationships']) : 0,
+                'relationship_count' => $relationship_count,
             ],
         ]);
+
+        if (!empty($payload['graph']['success'])) {
+            self::emit_event('knowledge_graph_updated', [
+                'story_id' => $story_id,
+                'proof_id' => $payload['proof_id'],
+                'relationship_count' => $relationship_count,
+                'error_count' => is_array($payload['graph']['errors'] ?? null) ? count($payload['graph']['errors']) : 0,
+            ]);
+
+            do_action('tsemou_lifecycle_stage', [
+                'story_id' => $story_id,
+                'stage' => 'Knowledge Graph Update',
+                'source' => 'discovery_orchestrator',
+                'context' => [
+                    'proof_id' => $payload['proof_id'],
+                    'relationship_count' => $relationship_count,
+                ],
+            ]);
+        }
 
         self::add_log('story_processing', 'Story processed into canonical evidence.', [
             'story_id' => $story_id,
