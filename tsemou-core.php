@@ -2,7 +2,7 @@
 /**
  * Plugin Name: TSEMOU Core Dev
  * Description: Autonomous TSEMOU OS 3.0 development core for tsemoulab.com.
- * Version: 3.0.11
+ * Version: 5.0.1
  * Author: TSEMOU
  */
 if (!defined('ABSPATH')) exit;
@@ -15,7 +15,7 @@ if (defined('TSEMOU_CORE_DEV_ALREADY_LOADED')) {
     return;
 }
 define('TSEMOU_CORE_DEV_ALREADY_LOADED', true);
-define('TSEMOU_CORE_VERSION', '3.0.11');
+define('TSEMOU_CORE_VERSION', '5.0.1');
 define('TSEMOU_CORE_PATH', plugin_dir_path(__FILE__));
 define('TSEMOU_CORE_URL', plugin_dir_url(__FILE__));
 require_once TSEMOU_CORE_PATH . 'includes/class-core.php';
