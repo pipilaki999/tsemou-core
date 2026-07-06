@@ -274,6 +274,16 @@ class Discovery_Orchestrator {
         update_option(self::option_key('logs'), array_slice($logs, 0, 300), false);
     }
 
+    private static function emit_event($event, array $payload = []) {
+        $event = sanitize_key($event);
+        if (!$event) return;
+
+        do_action('tsemou_' . $event, $payload);
+        self::add_log('event', 'Event emitted: ' . $event, [
+            'keys' => array_keys($payload),
+        ]);
+    }
+
     public static function make_queue_key($engine, $payload) {
         $parts = [
             $engine,
@@ -550,6 +560,12 @@ class Discovery_Orchestrator {
         $payload['relationships'] = $result['relationships'] ?? [];
         $payload['graph'] = $result['graph'] ?? [];
 
+        self::emit_event('evidence_created', [
+            'story_id' => $story_id,
+            'proof_id' => $payload['proof_id'],
+            'relationship_count' => is_array($payload['relationships']) ? count($payload['relationships']) : 0,
+        ]);
+
         self::add_log('story_processing', 'Story processed into canonical evidence.', [
             'story_id' => $story_id,
             'proof_id' => $payload['proof_id'],
@@ -747,6 +763,13 @@ class Discovery_Orchestrator {
         $payload['source_count'] = intval($discovery['count'] ?? count($payloads));
         $payload['queued_source_fetch_jobs'] = $count;
 
+        self::emit_event('source_discovered', [
+            'country' => $payload['country'] ?? '',
+            'industry' => $payload['industry'] ?? '',
+            'source_count' => $payload['source_count'],
+            'queued_source_fetch_jobs' => $count,
+        ]);
+
         self::add_log('source_discovery', 'Source Discovery resolved candidate sources.', $payload);
 
         return [
@@ -787,6 +810,12 @@ class Discovery_Orchestrator {
         $payload['raw_id'] = $result['raw_id'] ?? '';
         $payload['raw_status'] = $result['record']['status'] ?? '';
         $payload['http_status'] = $result['record']['metadata']['http_status'] ?? 0;
+
+        self::emit_event('article_imported', [
+            'raw_id' => $payload['raw_id'],
+            'source_url' => $payload['source_url'] ?? '',
+            'http_status' => $payload['http_status'],
+        ]);
 
         self::add_log('scraping_engine', 'Scraping Engine created Raw Evidence.', $payload);
 
@@ -844,6 +873,12 @@ class Discovery_Orchestrator {
         $payload['evidence_storage_mode'] = 'runtime_file';
         $payload['database_write'] = 'no';
 
+        self::emit_event('evidence_draft_created', [
+            'draft_id' => $payload['draft_id'],
+            'raw_id' => $payload['raw_id'] ?? '',
+            'storage_mode' => $payload['evidence_storage_mode'],
+        ]);
+
         self::add_log('automatic_evidence_creation', 'Automatic Evidence Creation created Evidence Draft.', $payload);
         return [
             'success' => true,
@@ -884,6 +919,13 @@ class Discovery_Orchestrator {
         $payload['company_id'] = $result['record']['company_id'] ?? ($payload['company_id'] ?? 0);
         $payload['source_id'] = $result['record']['source_id'] ?? ($payload['source_id'] ?? 0);
 
+        self::emit_event('company_linked', [
+            'link_id' => $payload['link_id'],
+            'company_id' => intval($payload['company_id']),
+            'source_id' => intval($payload['source_id']),
+            'draft_id' => $payload['draft_id'] ?? '',
+        ]);
+
         self::add_log('automatic_linking', 'Automatic Linking created candidate links.', $payload);
         return [
             'success' => true,
@@ -907,6 +949,16 @@ class Discovery_Orchestrator {
             $kg = \TSEMOU\Modules\AutomaticLinking\Automatic_Linking::update_knowledge_graph($payload);
             $payload['knowledge_graph_status'] = !empty($kg['updated']) ? 'graph_context_relation_updated' : 'graph_update_skipped_needs_review';
             $payload['relationship_id'] = $kg['relationship_id'] ?? '';
+
+            if (!empty($kg['updated'])) {
+                self::emit_event('knowledge_graph_updated', [
+                    'relationship_id' => $payload['relationship_id'],
+                    'company_id' => intval($payload['company_id'] ?? 0),
+                    'source_id' => intval($payload['source_id'] ?? 0),
+                    'draft_id' => $payload['draft_id'] ?? '',
+                ]);
+            }
+
             self::add_log('knowledge_graph_update', $kg['message'] ?? 'Knowledge Graph Update completed.', $payload);
             return [
                 'success' => !empty($kg['success']),
