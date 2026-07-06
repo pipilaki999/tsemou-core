@@ -218,6 +218,14 @@ class Discovery_Orchestrator {
                 'next_engine' => null,
                 'description' => 'Updates graph relations after acquisition and linking.'
             ],
+            'promotion_evaluation' => [
+                'label' => 'Promotion Evaluation',
+                'status' => 'ready',
+                'phase' => 'B',
+                'depends_on' => ['story_processing'],
+                'next_engine' => null,
+                'description' => 'Evaluates story promotion cadence and updates Living Case state using Policy and Event Intelligence outputs.'
+            ],
         ];
     }
 
@@ -478,6 +486,8 @@ class Discovery_Orchestrator {
         switch ($engine) {
             case 'story_processing':
                 return self::execute_story_processing($item);
+            case 'promotion_evaluation':
+                return self::execute_promotion_evaluation($item);
             case 'company_discovery':
                 return self::execute_company_discovery($item);
             case 'source_discovery':
@@ -550,9 +560,148 @@ class Discovery_Orchestrator {
         return [
             'success' => true,
             'message' => 'Story processing completed. Canonical proof created or updated.',
-            'next_engine' => null,
+            'next_engine' => 'promotion_evaluation',
             'payload' => $payload,
             'result' => $result
+        ];
+    }
+
+    public static function execute_promotion_evaluation($item) {
+        $payload = self::payload_from_item($item);
+        $story_id = absint($payload['story_id'] ?? 0);
+
+        if ($story_id <= 0) {
+            return [
+                'success' => false,
+                'message' => 'Promotion evaluation requires a valid story_id.'
+            ];
+        }
+
+        if (!class_exists('\\TSEMOU\\Modules\\EventIntelligence\\Event_Intelligence_Orchestrator')) {
+            $file = TSEMOU_CORE_PATH . 'modules/event-intelligence/class-event-intelligence-orchestrator.php';
+            if (file_exists($file)) {
+                require_once $file;
+            }
+        }
+
+        if (!class_exists('\\TSEMOU\\Modules\\PolicyEngine\\Policy_Engine')) {
+            $file = TSEMOU_CORE_PATH . 'modules/policy-engine/class-policy-engine.php';
+            if (file_exists($file)) {
+                require_once $file;
+            }
+        }
+
+        if (!class_exists('\\TSEMOU\\Modules\\EventIntelligence\\Event_Intelligence_Orchestrator')) {
+            return [
+                'success' => false,
+                'message' => 'Event Intelligence Orchestrator is not loaded for promotion evaluation.'
+            ];
+        }
+
+        $snapshot = \TSEMOU\Modules\EventIntelligence\Event_Intelligence_Orchestrator::instance()->run(['story_id' => $story_id]);
+        $state = method_exists($snapshot, 'to_array') ? $snapshot->to_array() : [];
+        $ranking = is_array($state['story_ranking'] ?? null) ? $state['story_ranking'] : [];
+        $score = floatval($ranking['score'] ?? 0);
+
+        $top_min = class_exists('\\TSEMOU\\Modules\\PolicyEngine\\Policy_Engine')
+            ? floatval(\TSEMOU\Modules\PolicyEngine\Policy_Engine::get('promotion.top_candidate_min_score', 85))
+            : 85.0;
+        $second_min = class_exists('\\TSEMOU\\Modules\\PolicyEngine\\Policy_Engine')
+            ? floatval(\TSEMOU\Modules\PolicyEngine\Policy_Engine::get('promotion.second_candidate_min_score', 70))
+            : 70.0;
+        $third_min = class_exists('\\TSEMOU\\Modules\\PolicyEngine\\Policy_Engine')
+            ? floatval(\TSEMOU\Modules\PolicyEngine\Policy_Engine::get('promotion.third_candidate_min_score', 55))
+            : 55.0;
+
+        $slot = '';
+        $interval_hours = 0;
+        if ($score >= $top_min) {
+            $slot = 'top';
+            $interval_hours = class_exists('\\TSEMOU\\Modules\\PolicyEngine\\Policy_Engine')
+                ? intval(\TSEMOU\Modules\PolicyEngine\Policy_Engine::get('promotion.top_candidate_interval_hours', 1))
+                : 1;
+        } elseif ($score >= $second_min) {
+            $slot = 'second';
+            $interval_hours = class_exists('\\TSEMOU\\Modules\\PolicyEngine\\Policy_Engine')
+                ? intval(\TSEMOU\Modules\PolicyEngine\Policy_Engine::get('promotion.second_candidate_interval_hours', 2))
+                : 2;
+        } elseif ($score >= $third_min) {
+            $slot = 'third';
+            $interval_hours = class_exists('\\TSEMOU\\Modules\\PolicyEngine\\Policy_Engine')
+                ? intval(\TSEMOU\Modules\PolicyEngine\Policy_Engine::get('promotion.third_candidate_interval_hours', 4))
+                : 4;
+        }
+
+        update_post_meta($story_id, '_tsemou_story_ranking_score', $score);
+        update_post_meta($story_id, '_tsemou_story_ranking_priority', sanitize_text_field($ranking['priority'] ?? 'low'));
+
+        if ($slot === '') {
+            update_post_meta($story_id, '_tsemou_promotion_status', 'not_eligible');
+            self::add_log('promotion_evaluation', 'Story is below promotion thresholds.', [
+                'story_id' => $story_id,
+                'score' => $score,
+            ]);
+
+            return [
+                'success' => true,
+                'message' => 'Promotion evaluation completed: story is below MVT promotion thresholds.',
+                'next_engine' => null,
+                'payload' => $payload,
+            ];
+        }
+
+        $now_ts = time();
+        $last_surface = get_post_meta($story_id, '_tsemou_promotion_last_surface_at', true);
+        $last_ts = $last_surface ? strtotime($last_surface) : 0;
+        $interval_seconds = max(1, $interval_hours) * HOUR_IN_SECONDS;
+
+        if ($last_ts > 0 && ($now_ts - $last_ts) < $interval_seconds) {
+            $remaining = $interval_seconds - ($now_ts - $last_ts);
+            update_post_meta($story_id, '_tsemou_promotion_status', 'waiting_cadence');
+
+            self::add_log('promotion_evaluation', 'Story promotion deferred by cadence policy.', [
+                'story_id' => $story_id,
+                'slot' => $slot,
+                'score' => $score,
+                'remaining_seconds' => $remaining,
+            ]);
+
+            return [
+                'success' => true,
+                'message' => 'Promotion evaluation completed: cadence window not elapsed yet.',
+                'next_engine' => null,
+                'payload' => $payload,
+            ];
+        }
+
+        $now_mysql = current_time('mysql');
+        update_post_meta($story_id, '_tsemou_promotion_status', 'promoted');
+        update_post_meta($story_id, '_tsemou_promotion_candidate_slot', $slot);
+        update_post_meta($story_id, '_tsemou_promotion_last_surface_at', $now_mysql);
+        if (!get_post_meta($story_id, '_tsemou_story_promoted_at', true)) {
+            update_post_meta($story_id, '_tsemou_story_promoted_at', $now_mysql);
+        }
+        update_post_meta($story_id, '_tsemou_living_case_state', 'active');
+
+        $event_payload = [
+            'story_id' => $story_id,
+            'slot' => $slot,
+            'score' => $score,
+            'interval_hours' => $interval_hours,
+            'rank_priority' => sanitize_text_field($ranking['priority'] ?? 'low'),
+            'promoted_at' => $now_mysql,
+        ];
+
+        do_action('tsemou_story_promoted', $story_id, $event_payload);
+        do_action('tsemou_living_case_updated', $story_id, $event_payload);
+
+        self::add_log('promotion_evaluation', 'Story promoted to Living Case candidate.', $event_payload);
+
+        return [
+            'success' => true,
+            'message' => 'Promotion evaluation completed: story promoted and Living Case state refreshed.',
+            'next_engine' => null,
+            'payload' => array_merge($payload, $event_payload),
         ];
     }
 

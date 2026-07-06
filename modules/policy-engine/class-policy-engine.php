@@ -69,6 +69,12 @@ class Policy_Engine {
             'trust.evidence_weight' => 85,
             'trust.community_weight' => 15,
             'trust.base_score' => 5.0,
+            'promotion.top_candidate_min_score' => 85,
+            'promotion.second_candidate_min_score' => 70,
+            'promotion.third_candidate_min_score' => 55,
+            'promotion.top_candidate_interval_hours' => 1,
+            'promotion.second_candidate_interval_hours' => 2,
+            'promotion.third_candidate_interval_hours' => 4,
         ];
     }
 
