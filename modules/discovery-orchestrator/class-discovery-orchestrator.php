@@ -588,6 +588,51 @@ class Discovery_Orchestrator {
             ]);
         }
 
+        $community_scores = [];
+        $community_vote_count = 0;
+        if (class_exists('\\TSEMOU\\Modules\\CompanyEngine\\Company_Engine')) {
+            $connected_companies = \TSEMOU\Modules\CompanyEngine\Company_Engine::get_connected_company_ids($story_id);
+            if (class_exists('\\TSEMOU\\Modules\\TrustEngine\\Trust_Engine')) {
+                foreach ((array) $connected_companies as $company_id) {
+                    $company_id = absint($company_id);
+                    if ($company_id <= 0) continue;
+
+                    $community_scores[$company_id] = floatval(\TSEMOU\Modules\TrustEngine\Trust_Engine::calculate_community_score($company_id));
+                    $votes = get_post_meta($company_id, '_tsemou_community_votes', true);
+                    if (is_array($votes)) {
+                        $community_vote_count += count($votes);
+                    }
+                }
+            }
+        }
+
+        if (!empty($community_scores)) {
+            $community_avg = round(array_sum($community_scores) / max(1, count($community_scores)), 2);
+            $payload['community_intelligence'] = [
+                'company_count' => count($community_scores),
+                'community_score_average' => $community_avg,
+                'vote_count' => intval($community_vote_count),
+            ];
+
+            self::emit_event('community_intelligence_evaluated', [
+                'story_id' => $story_id,
+                'company_count' => count($community_scores),
+                'community_score_average' => $community_avg,
+                'vote_count' => intval($community_vote_count),
+            ]);
+
+            do_action('tsemou_lifecycle_stage', [
+                'story_id' => $story_id,
+                'stage' => 'Community Intelligence',
+                'source' => 'discovery_orchestrator',
+                'context' => [
+                    'company_count' => count($community_scores),
+                    'community_score_average' => $community_avg,
+                    'vote_count' => intval($community_vote_count),
+                ],
+            ]);
+        }
+
         $trust_updates = [];
         if ($payload['proof_id'] > 0 && class_exists('\\TSEMOU\\Modules\\TrustEngine\\Trust_Engine')) {
             $company_ids = \TSEMOU\Modules\TrustEngine\Trust_Engine::get_company_ids_for_evidence($payload['proof_id']);
