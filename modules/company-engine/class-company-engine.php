@@ -11,6 +11,7 @@ class Company_Engine {
     }
 
     private function __construct() {
+        add_action('init', [$this, 'register_company_cpt']);
         add_action('add_meta_boxes', [$this, 'add_company_meta_boxes']);
         add_action('save_post_company', [$this, 'save_company_meta'], 10, 2);
         add_action('tsemou_public_pages_update_requested', [$this, 'handle_public_pages_update_requested'], 10, 3);
@@ -27,6 +28,30 @@ class Company_Engine {
         add_shortcode('tsemou_related_articles_pro', [$this, 'shortcode_enhanced_related_articles']);
         add_action('wp_footer', [$this, 'render_related_articles_footer_safe'], 20);
         add_action('template_redirect', [$this, 'start_company_template_buffer'], 1);
+    }
+
+    public function register_company_cpt() {
+        if (post_type_exists('company')) return;
+
+        register_post_type('company', [
+            'labels' => [
+                'name' => 'Companies',
+                'singular_name' => 'Company',
+                'menu_name' => 'Companies',
+                'add_new_item' => 'Add New Company',
+                'edit_item' => 'Edit Company',
+                'all_items' => 'All Companies'
+            ],
+            'public' => true,
+            'show_ui' => true,
+            'show_in_menu' => 'tsemou-os',
+            'menu_icon' => 'dashicons-building',
+            'show_in_rest' => true,
+            'has_archive' => true,
+            'rewrite' => ['slug' => 'companies'],
+            'supports' => ['title', 'editor', 'excerpt', 'thumbnail', 'author', 'revisions'],
+            'capability_type' => 'post'
+        ]);
     }
 
     public function handle_public_pages_update_requested($story_id, $company_ids = [], $payload = []) {
