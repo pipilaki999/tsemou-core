@@ -560,6 +560,19 @@ class Discovery_Orchestrator {
         $payload['relationships'] = $result['relationships'] ?? [];
         $payload['graph'] = $result['graph'] ?? [];
 
+        if (empty($payload['graph']['success'])) {
+            self::add_log('story_processing', 'Story processing blocked: Knowledge Graph update failed.', [
+                'story_id' => $story_id,
+                'proof_id' => $payload['proof_id'],
+                'graph_errors' => $payload['graph']['errors'] ?? [],
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Story processing failed: Knowledge Graph update did not complete.',
+            ];
+        }
+
         $relationship_count = is_array($payload['relationships']) ? count($payload['relationships']) : 0;
         if ($relationship_count > 0) {
             self::emit_event('entity_linked', [
