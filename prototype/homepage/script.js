@@ -226,7 +226,7 @@ const defaultStories = [
 
 let stories = [...defaultStories];
 
-const newsItems = [
+const defaultNewsItems = [
   {
     type: "POST",
     title: "Night-shift nurses log expired cooling units in ward C",
@@ -277,6 +277,8 @@ const newsItems = [
     image: "https://picsum.photos/seed/tsemou-feed-7/120/120"
   }
 ];
+
+let newsItems = [...defaultNewsItems];
 
 const communityContainer = document.getElementById("communitySections");
 const storyFeed = document.getElementById("storyFeed");
@@ -471,6 +473,66 @@ async function loadLivingCasesFromBackend() {
   }
 }
 
+function mapEvidencePostToFeedItem(post) {
+  const timestamp = post?.modified || post?.date || "";
+  return {
+    type: "EVIDENCE",
+    title: decodeHtml(post?.title?.rendered || "New evidence item"),
+    author: "Evidence Engine",
+    time: toShortRelativeTime(timestamp),
+    timestamp,
+    image: `https://picsum.photos/seed/tsemou-proof-${post?.id || 0}/120/120`,
+    link: post?.link || "#"
+  };
+}
+
+function mapStoryPostToFeedItem(post) {
+  const timestamp = post?.modified || post?.date || "";
+  return {
+    type: "STORY",
+    title: decodeHtml(post?.title?.rendered || "Story updated"),
+    author: "Story Engine",
+    time: toShortRelativeTime(timestamp),
+    timestamp,
+    image: `https://picsum.photos/seed/tsemou-story-feed-${post?.id || 0}/120/120`,
+    link: post?.link || "#"
+  };
+}
+
+async function loadCommunityFeedFromBackend() {
+  const [proofPosts, storyPosts] = await Promise.all([
+    fetchWpCollection("tsemou_proof", {
+      per_page: 12,
+      status: "publish",
+      orderby: "modified",
+      order: "desc",
+      _fields: "id,title,date,modified,link"
+    }),
+    fetchWpCollection("story", {
+      per_page: 12,
+      status: "publish",
+      orderby: "modified",
+      order: "desc",
+      _fields: "id,title,date,modified,link"
+    })
+  ]);
+
+  const feed = [
+    ...proofPosts.map(mapEvidencePostToFeedItem),
+    ...storyPosts.map(mapStoryPostToFeedItem)
+  ]
+    .sort((a, b) => {
+      const ta = Date.parse(a?.timestamp || "") || 0;
+      const tb = Date.parse(b?.timestamp || "") || 0;
+      return tb - ta;
+    })
+    .slice(0, 14);
+
+  if (feed.length > 0) {
+    newsItems = feed;
+  }
+}
+
 function renderCommunity() {
   const rankTone = (rank) => {
     if (rank === 1) return "gold";
@@ -646,6 +708,7 @@ function newsTemplate(item) {
         <h4 class="entry-title">${item.title}</h4>
         <p class="entry-author">${item.author} • ${item.time}</p>
         <img class="entry-thumb" src="${item.image}" alt="${item.type} thumbnail">
+        <p class="entry-link-wrap"><a href="${item.link || "#"}">Open</a></p>
         <div class="entry-actions">
           <button class="vote-btn tsemit-action" type="button" aria-label="TSEMIT this ${item.type.toLowerCase()}">TSEMIT</button>
           <button class="vote-btn untsemit-action" type="button" aria-label="UNTSEMIT this ${item.type.toLowerCase()}">UNTSEMIT</button>
@@ -704,6 +767,7 @@ chips.forEach((chip) => {
 async function initializeHomepage() {
   await loadCommunityRankingsFromBackend();
   await loadLivingCasesFromBackend();
+  await loadCommunityFeedFromBackend();
   renderCommunity();
   renderStories();
   renderNews();
