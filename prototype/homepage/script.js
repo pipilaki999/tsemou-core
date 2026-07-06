@@ -1,63 +1,58 @@
-const communityData = [
+const risingStories = [
   {
-    title: "Best Companies",
-    items: [
-      { name: "Nordic Grid Renewables", metric: "+18 trust" },
-      { name: "Helios Public Transit", metric: "+13 trust" },
-      { name: "BlueRiver Water Systems", metric: "+9 trust" },
-      { name: "Mercia Clinical Labs", metric: "+7 trust" }
-    ]
+    rank: 1,
+    title: "Lead-tainted river corridor expands to 46 villages",
+    metric: "1.9k interactions",
+    score: 97,
+    rising: "+12 today",
+    image: "https://picsum.photos/seed/tsemou-rising-1/120/90"
   },
   {
-    title: "Worst Companies",
-    items: [
-      { name: "Arcturon Chemicals", metric: "-22 trust" },
-      { name: "Kharon Textiles Group", metric: "-16 trust" },
-      { name: "DeltaMine Logistics", metric: "-13 trust" },
-      { name: "Southbay Port Holdings", metric: "-10 trust" }
-    ]
+    rank: 2,
+    title: "Dormitory fire permits linked to exemption chain",
+    metric: "1.3k interactions",
+    score: 91,
+    rising: "Rising Fast",
+    image: "https://picsum.photos/seed/tsemou-rising-2/120/90"
   },
   {
-    title: "Best Public Figures",
-    items: [
-      { name: "Dr. Elena Morais", metric: "4 verified actions" },
-      { name: "Jamal Adeyemi", metric: "3 solutions shipped" },
-      { name: "Sofia Karim", metric: "2 policy updates" }
-    ]
+    rank: 3,
+    title: "Insulin overpricing network mapped across districts",
+    metric: "1.1k interactions",
+    score: 86,
+    rising: "+8",
+    image: "https://picsum.photos/seed/tsemou-rising-3/120/90"
   },
   {
-    title: "Worst Public Figures",
-    items: [
-      { name: "Victor Hale", metric: "7 unresolved claims" },
-      { name: "Mara Dexton", metric: "5 evidence conflicts" },
-      { name: "Anton Reyes", metric: "4 unresolved updates" }
-    ]
+    rank: 4,
+    title: "Heatwave mortality undercount disputed by clinics",
+    metric: "824 interactions",
+    score: 81,
+    rising: "+4",
+    image: "https://picsum.photos/seed/tsemou-rising-4/120/90"
   },
   {
-    title: "Community Discoveries",
-    items: [
-      { name: "Shadow subcontractor trail", metric: "New in Manila" },
-      { name: "Unreported waste route", metric: "New in Lagos" },
-      { name: "School meal contract leak", metric: "New in Lima" }
-    ]
-  },
-  {
-    title: "Most Wanted Solutions",
-    items: [
-      { name: "Open supply chain registry", metric: "2.4k support" },
-      { name: "City heat shelter map", metric: "1.7k support" },
-      { name: "Public drug pricing board", metric: "1.2k support" }
-    ]
-  },
-  {
-    title: "Active TSEMITs",
-    items: [
-      { name: "Night shift testimonies", metric: "129 active" },
-      { name: "River toxicity samples", metric: "103 active" },
-      { name: "Transit access audit", metric: "84 active" }
-    ]
+    rank: 5,
+    title: "School meal shell vendors traced to duplicate IDs",
+    metric: "693 interactions",
+    score: 77,
+    rising: "+6",
+    image: "https://picsum.photos/seed/tsemou-rising-5/120/90"
   }
 ];
+
+const companyLeaders = {
+  best: [
+    { name: "Nordic Grid", metric: "+18 trust" },
+    { name: "Helios Transit", metric: "+13 trust" },
+    { name: "BlueRiver Water", metric: "+9 trust" }
+  ],
+  worst: [
+    { name: "Arcturon Chem", metric: "-22 trust" },
+    { name: "Kharon Textile", metric: "-16 trust" },
+    { name: "DeltaMine", metric: "-13 trust" }
+  ]
+};
 
 const stories = [
   {
@@ -227,46 +222,55 @@ const stories = [
 ];
 
 const newsItems = [
-  ["21:54", "Reuters", "Labor", "medium", "Dockworker unions in Valencia confirm talks resume after midnight mediation"],
-  ["21:47", "AP", "Climate", "low", "Flood barriers opened in two Dutch towns after river pressure warning"],
-  ["21:40", "BBC", "Health", "medium", "Regional health agency issues mosquito-borne illness advisory"],
-  ["21:34", "Al Jazeera", "Energy", "high", "Power cuts continue in central districts after transformer fire"],
-  ["21:26", "Nikkei", "Economy", "low", "Rice export limits eased as domestic stockpiles recover"],
-  ["21:18", "AFP", "Justice", "medium", "Court grants interim relief in municipal housing displacement case"],
-  ["21:10", "Guardian", "Rights", "high", "Rights monitors publish detention access gaps at border sites"],
-  ["21:03", "DW", "Transport", "low", "Night rail service restored on Berlin regional corridor"],
-  ["20:56", "Reuters", "Industry", "medium", "Battery supplier recalls two lots after safety inspection"],
-  ["20:49", "AP", "Education", "low", "Public schools extend meal support through summer break"],
-  ["20:43", "BBC", "Environment", "medium", "Coastal erosion maps updated for Atlantic settlements"],
-  ["20:36", "Financial Times", "Energy", "high", "Gas storage reserve falls below seasonal benchmark"],
-  ["20:29", "Le Monde", "Politics", "low", "Coalition parties reopen negotiation on anti-corruption bill"],
-  ["20:22", "Reuters", "Agriculture", "medium", "Fertilizer shipments delayed at Pacific freight terminals"],
-  ["20:16", "AP", "Health", "high", "Children's ward in capital city reaches capacity amid heatwave"],
-  ["20:09", "Bloomberg", "Finance", "low", "Sovereign bond spread narrows after policy statement"],
-  ["20:01", "BBC", "Labor", "medium", "Factory shift records reviewed after overtime complaints"],
-  ["19:54", "El Pais", "Water", "high", "Reservoir level drops trigger emergency usage restrictions"],
-  ["19:47", "Reuters", "Digital", "low", "National telecom outage resolved after routing update"],
-  ["19:40", "AP", "Justice", "medium", "Prosecutors file procurement bid-rigging case in port city"],
-  ["19:34", "NPR", "Housing", "low", "Tenants' association opens legal clinic in three neighborhoods"],
-  ["19:27", "Reuters", "Climate", "medium", "Wildfire line expands near mountain highway"],
-  ["19:20", "BBC", "Health", "low", "Public dashboard adds vaccination inventory transparency tab"],
-  ["19:12", "AFP", "Conflict", "high", "Ceasefire monitoring mission reports overnight violations"],
-  ["19:05", "Wall Street Journal", "Economy", "medium", "Port congestion eases as customs backlog clears"],
-  ["18:59", "Reuters", "Supply Chain", "medium", "Textile mill shutdown affects four export hubs"],
-  ["18:52", "AP", "Technology", "low", "Open-data portal adds procurement machine-readable release"],
-  ["18:44", "BBC", "Rights", "medium", "Civil coalition calls for migrant shelter oversight panel"],
-  ["18:37", "Reuters", "Energy", "high", "Grid operator issues evening peak demand emergency notice"],
-  ["18:30", "Guardian", "Environment", "low", "Urban tree canopy pilot launches in three districts"],
-  ["18:23", "AP", "Food", "medium", "School pantry network reports rising weekend demand"],
-  ["18:15", "Reuters", "Justice", "high", "Audit shows contractor blacklist not applied in 11 tenders"],
-  ["18:08", "BBC", "Transport", "low", "Metro station accessibility lift repairs completed"],
-  ["18:01", "Reuters", "Labor", "medium", "Rider cooperatives demand transparent dispatch scoring"],
-  ["17:54", "DW", "Health", "low", "Community clinic staffing stabilizes after emergency hires"],
-  ["17:47", "Reuters", "Water", "medium", "Pipeline contamination alert prompts district-level boil notice"],
-  ["17:39", "AP", "Politics", "low", "City council schedules open hearing on industrial zoning"],
-  ["17:33", "BBC", "Climate", "high", "Heat index exceeds record level across southern corridor"],
-  ["17:26", "Reuters", "Education", "medium", "Parents request independent review of school vendor registry"],
-  ["17:19", "AFP", "Health", "medium", "Local labs publish updated particulate exposure readings"]
+  {
+    type: "POST",
+    title: "Night-shift nurses log expired cooling units in ward C",
+    author: "Mila Santos",
+    time: "2m ago",
+    image: "https://picsum.photos/seed/tsemou-feed-1/120/120"
+  },
+  {
+    type: "EVIDENCE",
+    title: "Lab certificate uploaded for river toxicity sample #77",
+    author: "Amadou Keita",
+    time: "5m ago",
+    image: "https://picsum.photos/seed/tsemou-feed-2/120/120"
+  },
+  {
+    type: "STORY",
+    title: "Parents report duplicate school meal vendors in district 11",
+    author: "Rina Delos Reyes",
+    time: "9m ago",
+    image: "https://picsum.photos/seed/tsemou-feed-3/120/120"
+  },
+  {
+    type: "SOLUTION",
+    title: "Community proposal: open procurement ledger by neighborhood",
+    author: "Adewale K.",
+    time: "14m ago",
+    image: "https://picsum.photos/seed/tsemou-feed-4/120/120"
+  },
+  {
+    type: "QUESTION",
+    title: "Why are tanker deliveries skipping informal settlements?",
+    author: "Lamia Idrissi",
+    time: "20m ago",
+    image: "https://picsum.photos/seed/tsemou-feed-5/120/120"
+  },
+  {
+    type: "EVIDENCE",
+    title: "Audio testimony added from dockworker permit hearing",
+    author: "Noah B.",
+    time: "27m ago",
+    image: "https://picsum.photos/seed/tsemou-feed-6/120/120"
+  },
+  {
+    type: "POST",
+    title: "Volunteer map links asthma peaks to landfill burn windows",
+    author: "Clara Mendez",
+    time: "31m ago",
+    image: "https://picsum.photos/seed/tsemou-feed-7/120/120"
+  }
 ];
 
 const communityContainer = document.getElementById("communitySections");
@@ -275,27 +279,72 @@ const liveNews = document.getElementById("liveNews");
 const heroSearch = document.getElementById("heroSearch");
 
 function renderCommunity() {
-  communityContainer.innerHTML = communityData
-    .map(
-      (section) => `
-      <section class="community-block" aria-label="${section.title}">
-        <h3>${section.title}</h3>
-        <ul>
-          ${section.items
-            .map(
-              (item) => `
-            <li>
-              <strong>${item.name}</strong>
-              <span>${item.metric}</span>
+  const rankTone = (rank) => {
+    if (rank === 1) return "gold";
+    if (rank === 2) return "silver";
+    if (rank === 3) return "bronze";
+    return "";
+  };
+
+  communityContainer.innerHTML = `
+    <section class="community-block rising" aria-label="Rising Stories">
+      <h3>🔥 Rising Stories</h3>
+      <ul class="rising-list">
+        ${risingStories
+          .map(
+            (item) => `
+            <li class="rising-item ${rankTone(item.rank)}">
+              <span class="rank-pill">${item.rank}</span>
+              <img src="${item.image}" alt="${item.title}">
+              <div>
+                <p class="rising-item-title">${item.title}</p>
+                <div class="rising-meta">
+                  <span>${item.metric}</span>
+                  <span class="rising-score">${item.score} <span class="rising-arrow">↑</span></span>
+                </div>
+                <p class="rising-indicator">▲ ${item.rising}</p>
+              </div>
             </li>
           `
+          )
+          .join("")}
+      </ul>
+    </section>
+
+    <section class="company-pair" aria-label="Company rankings">
+      <article class="company-mini" aria-label="Best Companies">
+        <h3>Best Companies</h3>
+        <ul>
+          ${companyLeaders.best
+            .map(
+              (item) => `
+              <li>
+                <strong>${item.name}</strong>
+                <span>${item.metric}</span>
+              </li>
+            `
             )
             .join("")}
         </ul>
-      </section>
-    `
-    )
-    .join("");
+      </article>
+
+      <article class="company-mini" aria-label="Worst Companies">
+        <h3>Worst Companies</h3>
+        <ul>
+          ${companyLeaders.worst
+            .map(
+              (item) => `
+              <li>
+                <strong>${item.name}</strong>
+                <span>${item.metric}</span>
+              </li>
+            `
+            )
+            .join("")}
+        </ul>
+      </article>
+    </section>
+  `;
 }
 
 function storyTemplate(story) {
@@ -394,17 +443,20 @@ function featuredStoryTemplate(story) {
 }
 
 function newsTemplate(item) {
-  const impactClass = item[3] === "high" ? "impact-high" : item[3] === "medium" ? "impact-medium" : "impact-low";
+  const typeClass = `type-${item.type.toLowerCase()}`;
   return `
-    <article class="news-item" tabindex="0">
-      <div class="news-top">
-        <span>${item[0]}</span>
-        <span>${item[1]}</span>
-      </div>
-      <h4 class="news-headline">${item[4]}</h4>
-      <div class="news-bottom">
-        <span>${item[2]}</span>
-        <span><span class="impact-dot ${impactClass}" aria-hidden="true"></span>${item[3]} impact</span>
+    <article class="news-item community-entry" tabindex="0">
+      <div>
+        <div class="entry-head">
+          <span class="entry-type ${typeClass}">${item.type}</span>
+        </div>
+        <h4 class="entry-title">${item.title}</h4>
+        <p class="entry-author">${item.author} • ${item.time}</p>
+        <img class="entry-thumb" src="${item.image}" alt="${item.type} thumbnail">
+        <div class="entry-actions">
+          <button class="vote-btn tsemit-action" type="button" aria-label="TSEMIT this ${item.type.toLowerCase()}">TSEMIT</button>
+          <button class="vote-btn untsemit-action" type="button" aria-label="UNTSEMIT this ${item.type.toLowerCase()}">UNTSEMIT</button>
+        </div>
       </div>
     </article>
   `;
@@ -432,9 +484,9 @@ function renderNews(filter = "") {
   const filtered = newsItems.filter((item) => {
     if (!needle) return true;
     return (
-      item[1].toLowerCase().includes(needle) ||
-      item[2].toLowerCase().includes(needle) ||
-      item[4].toLowerCase().includes(needle)
+      item.type.toLowerCase().includes(needle) ||
+      item.title.toLowerCase().includes(needle) ||
+      item.author.toLowerCase().includes(needle)
     );
   });
 
