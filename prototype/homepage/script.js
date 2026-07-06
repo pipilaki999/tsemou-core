@@ -1,4 +1,4 @@
-const risingStories = [
+const defaultRisingStories = [
   {
     rank: 1,
     title: "Lead-tainted river corridor expands to 46 villages",
@@ -41,7 +41,7 @@ const risingStories = [
   }
 ];
 
-const companyLeaders = {
+const defaultCompanyLeaders = {
   best: [
     { name: "Nordic Grid", metric: "+18 trust" },
     { name: "Helios Transit", metric: "+13 trust" },
@@ -53,6 +53,9 @@ const companyLeaders = {
     { name: "DeltaMine", metric: "-13 trust" }
   ]
 };
+
+let risingStories = [...defaultRisingStories];
+let companyLeaders = JSON.parse(JSON.stringify(defaultCompanyLeaders));
 
 const stories = [
   {
@@ -277,6 +280,134 @@ const communityContainer = document.getElementById("communitySections");
 const storyFeed = document.getElementById("storyFeed");
 const liveNews = document.getElementById("liveNews");
 const heroSearch = document.getElementById("heroSearch");
+
+function detectWpApiBase() {
+  const origin = window.location.origin;
+  if (!origin || origin === "null") return null;
+  return `${origin}/wp-json/wp/v2`;
+}
+
+const wpApiBase = detectWpApiBase();
+
+async function fetchWpCollection(endpoint, query = {}) {
+  if (!wpApiBase) return [];
+
+  const params = new URLSearchParams(query);
+  const url = `${wpApiBase}/${endpoint}${params.toString() ? `?${params.toString()}` : ""}`;
+
+  try {
+    const response = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!response.ok) return [];
+
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function decodeHtml(input) {
+  const parser = new DOMParser();
+  const parsed = parser.parseFromString(input || "", "text/html");
+  return (parsed.documentElement.textContent || "").trim();
+}
+
+function toShortRelativeTime(dateInput) {
+  if (!dateInput) return "recently";
+
+  const now = Date.now();
+  const then = new Date(dateInput).getTime();
+  if (Number.isNaN(then)) return "recently";
+
+  const deltaMinutes = Math.max(1, Math.floor((now - then) / 60000));
+  if (deltaMinutes < 60) return `${deltaMinutes}m ago`;
+
+  const deltaHours = Math.floor(deltaMinutes / 60);
+  if (deltaHours < 24) return `${deltaHours}h ago`;
+
+  const deltaDays = Math.floor(deltaHours / 24);
+  return `${deltaDays}d ago`;
+}
+
+function scoreFromStoryPost(post) {
+  const commentCount = Number.parseInt(post?.comment_count || 0, 10);
+  const lengthSignal = Math.min(40, Math.floor((post?.content?.rendered || "").length / 120));
+  return Math.max(1, Math.min(100, 50 + commentCount * 5 + lengthSignal));
+}
+
+function deriveCompanyMentions(storyPosts) {
+  const counts = new Map();
+
+  storyPosts.forEach((post) => {
+    const content = decodeHtml(post?.content?.rendered || "");
+    const matches = content.match(/[A-Z][a-zA-Z0-9&.-]{2,}(?:\s+[A-Z][a-zA-Z0-9&.-]{2,}){0,2}/g) || [];
+    matches.slice(0, 30).forEach((name) => {
+      const normalized = name.trim();
+      if (normalized.length < 4) return;
+      counts.set(normalized, (counts.get(normalized) || 0) + 1);
+    });
+  });
+
+  const ranked = [...counts.entries()]
+    .filter(([, count]) => count > 1)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6);
+
+  return {
+    best: ranked.slice(0, 3).map(([name, count]) => ({ name, metric: `${count} mentions` })),
+    worst: ranked.slice(3, 6).map(([name, count]) => ({ name, metric: `${count} mentions` }))
+  };
+}
+
+async function loadCommunityRankingsFromBackend() {
+  const storyPosts = await fetchWpCollection("story", {
+    per_page: 12,
+    status: "publish",
+    orderby: "modified",
+    order: "desc",
+    _fields: "id,title,modified,comment_count,content"
+  });
+
+  if (storyPosts.length > 0) {
+    risingStories = storyPosts.slice(0, 5).map((post, index) => ({
+      rank: index + 1,
+      title: decodeHtml(post?.title?.rendered || "Untitled story"),
+      metric: `${Number.parseInt(post?.comment_count || 0, 10)} interactions`,
+      score: scoreFromStoryPost(post),
+      rising: toShortRelativeTime(post?.modified),
+      image: `https://picsum.photos/seed/tsemou-story-${post.id || index + 1}/120/90`
+    }));
+
+    const companyPosts = await fetchWpCollection("company", {
+      per_page: 20,
+      status: "publish",
+      orderby: "modified",
+      order: "desc",
+      _fields: "id,title,modified"
+    });
+
+    if (companyPosts.length > 0) {
+      const ranked = companyPosts
+        .map((post, index) => ({
+          name: decodeHtml(post?.title?.rendered || "Unnamed company"),
+          metric: `${toShortRelativeTime(post?.modified)} update`,
+          freshness: new Date(post?.modified || 0).getTime() || 0,
+          tie: index
+        }))
+        .sort((a, b) => b.freshness - a.freshness || a.tie - b.tie);
+
+      companyLeaders = {
+        best: ranked.slice(0, 3).map(({ name, metric }) => ({ name, metric })),
+        worst: ranked.slice(-3).reverse().map(({ name, metric }) => ({ name, metric }))
+      };
+    } else {
+      const derived = deriveCompanyMentions(storyPosts);
+      if (derived.best.length > 0 && derived.worst.length > 0) {
+        companyLeaders = derived;
+      }
+    }
+  }
+}
 
 function renderCommunity() {
   const rankTone = (rank) => {
@@ -508,6 +639,11 @@ chips.forEach((chip) => {
   });
 });
 
-renderCommunity();
-renderStories();
-renderNews();
+async function initializeHomepage() {
+  await loadCommunityRankingsFromBackend();
+  renderCommunity();
+  renderStories();
+  renderNews();
+}
+
+initializeHomepage();
