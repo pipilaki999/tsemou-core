@@ -284,6 +284,7 @@ const communityContainer = document.getElementById("communitySections");
 const storyFeed = document.getElementById("storyFeed");
 const liveNews = document.getElementById("liveNews");
 const heroSearch = document.getElementById("heroSearch");
+let communityActionUrl = "#";
 
 function detectWpApiBase() {
   const origin = window.location.origin;
@@ -395,14 +396,17 @@ async function loadCommunityRankingsFromBackend() {
         .map((post, index) => ({
           name: decodeHtml(post?.title?.rendered || "Unnamed company"),
           metric: `${toShortRelativeTime(post?.modified)} update`,
+          actionUrl: post?.link ? `${post.link}#tsemou-community-vote` : "#",
           freshness: new Date(post?.modified || 0).getTime() || 0,
           tie: index
         }))
         .sort((a, b) => b.freshness - a.freshness || a.tie - b.tie);
 
+      communityActionUrl = ranked[0]?.actionUrl || communityActionUrl;
+
       companyLeaders = {
-        best: ranked.slice(0, 3).map(({ name, metric }) => ({ name, metric })),
-        worst: ranked.slice(-3).reverse().map(({ name, metric }) => ({ name, metric }))
+        best: ranked.slice(0, 3).map(({ name, metric, actionUrl }) => ({ name, metric, actionUrl })),
+        worst: ranked.slice(-3).reverse().map(({ name, metric, actionUrl }) => ({ name, metric, actionUrl }))
       };
     } else {
       const derived = deriveCompanyMentions(storyPosts);
@@ -433,6 +437,7 @@ function mapStoryPostToCard(post) {
   return {
     id: post?.id || 0,
     link: post?.link || "#",
+    actionUrl: post?.link ? `${post.link}#tsemit` : communityActionUrl,
     importance: estimateImportance(post),
     updated: toShortRelativeTime(post?.modified || post?.date),
     title,
@@ -482,7 +487,8 @@ function mapEvidencePostToFeedItem(post) {
     time: toShortRelativeTime(timestamp),
     timestamp,
     image: `https://picsum.photos/seed/tsemou-proof-${post?.id || 0}/120/120`,
-    link: post?.link || "#"
+    link: post?.link || "#",
+    actionUrl: post?.link ? `${post.link}#tsemit` : communityActionUrl
   };
 }
 
@@ -495,7 +501,8 @@ function mapStoryPostToFeedItem(post) {
     time: toShortRelativeTime(timestamp),
     timestamp,
     image: `https://picsum.photos/seed/tsemou-story-feed-${post?.id || 0}/120/120`,
-    link: post?.link || "#"
+    link: post?.link || "#",
+    actionUrl: post?.link ? `${post.link}#tsemit` : communityActionUrl
   };
 }
 
@@ -622,7 +629,7 @@ function storyTemplate(story) {
           <div class="meta-row"><span class="meta-label">Solutions</span><span>${story.solutions} active proposals</span></div>
         </div>
         <p class="timeline">Timeline: ${story.timeline}</p>
-        <button class="tsemit-btn" type="button" aria-label="Open TSEMIT actions for ${story.title}">TSEMIT</button>
+        <button class="tsemit-btn" data-action-url="${story.actionUrl || communityActionUrl}" type="button" aria-label="Open TSEMIT actions for ${story.title}">TSEMIT</button>
       </div>
     </article>
   `;
@@ -685,7 +692,7 @@ function featuredStoryTemplate(story) {
         </section>
 
         <section class="participation-panel" aria-label="Participation actions">
-          <button class="tsemit-btn" type="button" aria-label="Open TSEMIT actions for ${story.title}">TSEMIT</button>
+          <button class="tsemit-btn" data-action-url="${story.actionUrl || communityActionUrl}" type="button" aria-label="Open TSEMIT actions for ${story.title}">TSEMIT</button>
           <div class="participation-links">
             <a href="#" role="button">Add evidence</a>
             <a href="#" role="button">Suggest solution</a>
@@ -710,12 +717,24 @@ function newsTemplate(item) {
         <img class="entry-thumb" src="${item.image}" alt="${item.type} thumbnail">
         <p class="entry-link-wrap"><a href="${item.link || "#"}">Open</a></p>
         <div class="entry-actions">
-          <button class="vote-btn tsemit-action" type="button" aria-label="TSEMIT this ${item.type.toLowerCase()}">TSEMIT</button>
-          <button class="vote-btn untsemit-action" type="button" aria-label="UNTSEMIT this ${item.type.toLowerCase()}">UNTSEMIT</button>
+          <button class="vote-btn tsemit-action" data-action-url="${item.actionUrl || communityActionUrl}" type="button" aria-label="TSEMIT this ${item.type.toLowerCase()}">TSEMIT</button>
+          <button class="vote-btn untsemit-action" data-action-url="${item.actionUrl || communityActionUrl}" type="button" aria-label="UNTSEMIT this ${item.type.toLowerCase()}">UNTSEMIT</button>
         </div>
       </div>
     </article>
   `;
+}
+
+function wireCommunityActions() {
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest(".tsemit-btn, .tsemit-action, .untsemit-action");
+    if (!button) return;
+
+    const actionUrl = button.dataset.actionUrl || communityActionUrl || "#";
+    if (!actionUrl || actionUrl === "#") return;
+
+    window.location.href = actionUrl;
+  });
 }
 
 function renderStories(filter = "") {
@@ -774,3 +793,4 @@ async function initializeHomepage() {
 }
 
 initializeHomepage();
+wireCommunityActions();
