@@ -3,10 +3,37 @@ namespace TSEMOU\Modules\ScrapingEngine;
 
 if (!defined('ABSPATH')) exit;
 
+if (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+    error_log('[TSEMOU_ACTIVATION_TRACE] require:start modules/scraping-engine/class-fetcher.php');
+}
 require_once __DIR__ . '/class-fetcher.php';
+if (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+    error_log('[TSEMOU_ACTIVATION_TRACE] require:ok modules/scraping-engine/class-fetcher.php');
+}
+
+if (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+    error_log('[TSEMOU_ACTIVATION_TRACE] require:start modules/scraping-engine/class-parser.php');
+}
 require_once __DIR__ . '/class-parser.php';
+if (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+    error_log('[TSEMOU_ACTIVATION_TRACE] require:ok modules/scraping-engine/class-parser.php');
+}
+
+if (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+    error_log('[TSEMOU_ACTIVATION_TRACE] require:start modules/scraping-engine/class-normalizer.php');
+}
 require_once __DIR__ . '/class-normalizer.php';
+if (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+    error_log('[TSEMOU_ACTIVATION_TRACE] require:ok modules/scraping-engine/class-normalizer.php');
+}
+
+if (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+    error_log('[TSEMOU_ACTIVATION_TRACE] require:start modules/scraping-engine/class-storage.php');
+}
 require_once __DIR__ . '/class-storage.php';
+if (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+    error_log('[TSEMOU_ACTIVATION_TRACE] require:ok modules/scraping-engine/class-storage.php');
+}
 
 class Scraping_Engine {
     private static $instance = null;

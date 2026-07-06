@@ -3,7 +3,13 @@ namespace TSEMOU\Modules\EvidenceEngine;
 
 if (!defined('ABSPATH')) exit;
 
+if (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+    error_log('[TSEMOU_ACTIVATION_TRACE] require:start modules/evidence-engine/class-evidence-validator.php');
+}
 require_once __DIR__ . '/class-evidence-validator.php';
+if (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+    error_log('[TSEMOU_ACTIVATION_TRACE] require:ok modules/evidence-engine/class-evidence-validator.php');
+}
 
 class Evidence_Engine {
     private static $instance = null;

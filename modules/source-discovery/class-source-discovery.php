@@ -3,10 +3,37 @@ namespace TSEMOU\Modules\SourceDiscovery;
 
 if (!defined('ABSPATH')) exit;
 
+if (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+    error_log('[TSEMOU_ACTIVATION_TRACE] require:start modules/source-discovery/class-source-registry.php');
+}
 require_once __DIR__ . '/class-source-registry.php';
+if (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+    error_log('[TSEMOU_ACTIVATION_TRACE] require:ok modules/source-discovery/class-source-registry.php');
+}
+
+if (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+    error_log('[TSEMOU_ACTIVATION_TRACE] require:start modules/source-discovery/class-source-resolver.php');
+}
 require_once __DIR__ . '/class-source-resolver.php';
+if (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+    error_log('[TSEMOU_ACTIVATION_TRACE] require:ok modules/source-discovery/class-source-resolver.php');
+}
+
+if (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+    error_log('[TSEMOU_ACTIVATION_TRACE] require:start modules/source-discovery/class-source-prioritizer.php');
+}
 require_once __DIR__ . '/class-source-prioritizer.php';
+if (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+    error_log('[TSEMOU_ACTIVATION_TRACE] require:ok modules/source-discovery/class-source-prioritizer.php');
+}
+
+if (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+    error_log('[TSEMOU_ACTIVATION_TRACE] require:start modules/source-discovery/class-source-queue-builder.php');
+}
 require_once __DIR__ . '/class-source-queue-builder.php';
+if (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+    error_log('[TSEMOU_ACTIVATION_TRACE] require:ok modules/source-discovery/class-source-queue-builder.php');
+}
 
 class Source_Discovery {
     private static $instance = null;

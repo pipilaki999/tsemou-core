@@ -540,7 +540,7 @@ class Discovery_Orchestrator {
             ];
         }
 
-        $result = \\TSEMOU\\Modules\\EvidenceProcessingEngine\\Evidence_Processing_Engine::process_story($story_id);
+        $result = \TSEMOU\Modules\EvidenceProcessingEngine\Evidence_Processing_Engine::process_story($story_id);
 
         if (empty($result['status']) || $result['status'] === 'error') {
             self::add_log('story_processing', 'Story processing failed.', [

@@ -18,8 +18,23 @@ define('TSEMOU_CORE_DEV_ALREADY_LOADED', true);
 define('TSEMOU_CORE_VERSION', '5.0.1');
 define('TSEMOU_CORE_PATH', plugin_dir_path(__FILE__));
 define('TSEMOU_CORE_URL', plugin_dir_url(__FILE__));
+
+if (!function_exists('tsemou_activation_trace')) {
+    function tsemou_activation_trace($message) {
+        if (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+            error_log('[TSEMOU_ACTIVATION_TRACE] ' . $message);
+        }
+    }
+}
+
+tsemou_activation_trace('entry:before_core_require includes/class-core.php');
 require_once TSEMOU_CORE_PATH . 'includes/class-core.php';
-add_action('plugins_loaded', function () { \TSEMOU\Core::instance(); });
+tsemou_activation_trace('entry:after_core_require includes/class-core.php');
+add_action('plugins_loaded', function () {
+    tsemou_activation_trace('plugins_loaded:start Core::instance');
+    \TSEMOU\Core::instance();
+    tsemou_activation_trace('plugins_loaded:ok Core::instance');
+});
 
 /**
  * TSEMOU 3.0 hard root admin menu.
