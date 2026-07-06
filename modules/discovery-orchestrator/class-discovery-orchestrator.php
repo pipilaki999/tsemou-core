@@ -917,8 +917,12 @@ class Discovery_Orchestrator {
             'promoted_at' => $now_mysql,
         ];
 
-        self::emit_event('story_promoted', $event_payload);
-        self::emit_event('living_case_updated', $event_payload);
+        self::add_log('event', 'Event emitted: story_promoted', [
+            'keys' => array_keys($event_payload),
+        ]);
+        self::add_log('event', 'Event emitted: living_case_updated', [
+            'keys' => array_keys($event_payload),
+        ]);
 
         do_action('tsemou_lifecycle_stage', [
             'story_id' => $story_id,
