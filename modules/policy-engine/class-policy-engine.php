@@ -75,6 +75,7 @@ class Policy_Engine {
             'promotion.top_candidate_interval_hours' => 1,
             'promotion.second_candidate_interval_hours' => 2,
             'promotion.third_candidate_interval_hours' => 4,
+            'promotion.min_public_importance_score' => 50,
         ];
     }
 

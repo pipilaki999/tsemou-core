@@ -617,7 +617,9 @@ class Discovery_Orchestrator {
         $snapshot = \TSEMOU\Modules\EventIntelligence\Event_Intelligence_Orchestrator::instance()->run(['story_id' => $story_id]);
         $state = method_exists($snapshot, 'to_array') ? $snapshot->to_array() : [];
         $ranking = is_array($state['story_ranking'] ?? null) ? $state['story_ranking'] : [];
+        $importance = is_array($state['importance'] ?? null) ? $state['importance'] : [];
         $score = floatval($ranking['score'] ?? 0);
+        $importance_score = floatval($importance['score'] ?? 0);
 
         $top_min = class_exists('\\TSEMOU\\Modules\\PolicyEngine\\Policy_Engine')
             ? floatval(\TSEMOU\Modules\PolicyEngine\Policy_Engine::get('promotion.top_candidate_min_score', 85))
@@ -628,6 +630,25 @@ class Discovery_Orchestrator {
         $third_min = class_exists('\\TSEMOU\\Modules\\PolicyEngine\\Policy_Engine')
             ? floatval(\TSEMOU\Modules\PolicyEngine\Policy_Engine::get('promotion.third_candidate_min_score', 55))
             : 55.0;
+        $min_importance = class_exists('\\TSEMOU\\Modules\\PolicyEngine\\Policy_Engine')
+            ? floatval(\TSEMOU\Modules\PolicyEngine\Policy_Engine::get('promotion.min_public_importance_score', 50))
+            : 50.0;
+
+        if ($importance_score < $min_importance) {
+            update_post_meta($story_id, '_tsemou_promotion_status', 'not_eligible_importance');
+            self::add_log('promotion_evaluation', 'Story blocked by public importance gate.', [
+                'story_id' => $story_id,
+                'importance_score' => $importance_score,
+                'minimum_required' => $min_importance,
+            ]);
+
+            return [
+                'success' => true,
+                'message' => 'Promotion evaluation completed: story below minimum public importance threshold.',
+                'next_engine' => null,
+                'payload' => $payload,
+            ];
+        }
 
         $slot = '';
         $interval_hours = 0;
