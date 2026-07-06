@@ -785,9 +785,9 @@ function featuredStoryTemplate(story) {
         <section class="participation-panel" aria-label="Participation actions">
           <button class="tsemit-btn" data-action-url="${story.actionUrl || communityActionUrl}" type="button" aria-label="Open TSEMIT actions for ${story.title}">TSEMIT</button>
           <div class="participation-links">
-            <a href="#" role="button">Add evidence</a>
-            <a href="#" role="button">Suggest solution</a>
-            <a href="#" role="button">Join discussion</a>
+            <a href="${story.link || "#"}" role="button">Add evidence</a>
+            <a href="${story.link || "#"}" role="button">Suggest solution</a>
+            <a href="${story.link || "#"}" role="button">Join discussion</a>
           </div>
         </section>
       </div>
