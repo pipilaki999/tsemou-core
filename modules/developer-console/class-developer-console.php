@@ -364,6 +364,11 @@ class Developer_Console {
             'linked_entities' => 0,
             'companies_linked' => 0,
             'knowledge_graph_updated' => 'no',
+            'handoff_triggered' => 'no',
+            'automatic_linking_status' => 'skipped',
+            'automatic_linking_reason' => 'resolver_not_executed',
+            'knowledge_graph_update_status' => 'skipped',
+            'knowledge_graph_update_reason' => 'automatic_linking_not_executed',
             'error' => '',
             'resolution' => null,
         ];
@@ -390,6 +395,31 @@ class Developer_Console {
         $evidence_id = absint($resolution['evidence_id'] ?? 0);
         $out['resolved_evidence_id'] = $evidence_id;
         $out['evidence_status'] = sanitize_key($resolution['status'] ?? 'valid');
+
+        if (($resolution['code'] ?? '') !== 'resolved_existing') {
+            $out['automatic_linking_reason'] = 'handoff_only_for_resolved_existing';
+            $out['knowledge_graph_update_reason'] = 'handoff_only_for_resolved_existing';
+        }
+
+        if (($resolution['code'] ?? '') === 'resolved_existing' && $evidence_id > 0) {
+            $handoff = is_array($resolution['handoff'] ?? null) ? $resolution['handoff'] : [];
+            if (!empty($handoff)) {
+                $out['handoff_triggered'] = sanitize_text_field($handoff['handoff_triggered'] ?? 'yes');
+                $out['automatic_linking_status'] = sanitize_key($handoff['automatic_linking_status'] ?? 'skipped');
+                $out['automatic_linking_reason'] = sanitize_text_field($handoff['automatic_linking_reason'] ?? 'unknown');
+                $out['knowledge_graph_update_status'] = sanitize_key($handoff['knowledge_graph_update_status'] ?? 'skipped');
+                $out['knowledge_graph_update_reason'] = sanitize_text_field($handoff['knowledge_graph_update_reason'] ?? 'unknown');
+                if (($handoff['knowledge_graph_update_status'] ?? '') === 'success') {
+                    $out['knowledge_graph_updated'] = 'yes';
+                }
+            } else {
+                $out['handoff_triggered'] = 'no';
+                $out['automatic_linking_status'] = 'failed';
+                $out['automatic_linking_reason'] = 'resolver_handoff_missing';
+                $out['knowledge_graph_update_status'] = 'skipped';
+                $out['knowledge_graph_update_reason'] = 'automatic_linking_failed';
+            }
+        }
 
         if ($evidence_id > 0) {
             $company_ids = \TSEMOU\Modules\EvidenceEngine\Evidence_Engine::related_company_ids($evidence_id);
@@ -512,6 +542,11 @@ class Developer_Console {
                             <tr><th>Evidence Status</th><td><?php echo esc_html($post_bridge_diag['evidence_status']); ?></td></tr>
                             <tr><th>Linked Entities</th><td><?php echo esc_html($post_bridge_diag['linked_entities']); ?></td></tr>
                             <tr><th>Companies Linked</th><td><?php echo esc_html($post_bridge_diag['companies_linked']); ?></td></tr>
+                            <tr><th>Handoff Triggered</th><td><?php echo esc_html($post_bridge_diag['handoff_triggered']); ?></td></tr>
+                            <tr><th>Automatic Linking Status</th><td><?php echo esc_html($post_bridge_diag['automatic_linking_status']); ?></td></tr>
+                            <tr><th>Automatic Linking Reason</th><td><?php echo esc_html($post_bridge_diag['automatic_linking_reason']); ?></td></tr>
+                            <tr><th>Knowledge Graph Update Status</th><td><?php echo esc_html($post_bridge_diag['knowledge_graph_update_status']); ?></td></tr>
+                            <tr><th>Knowledge Graph Update Reason</th><td><?php echo esc_html($post_bridge_diag['knowledge_graph_update_reason']); ?></td></tr>
                             <tr><th>Knowledge Graph Updated</th><td><?php echo esc_html($post_bridge_diag['knowledge_graph_updated']); ?></td></tr>
                             <tr><th>Error</th><td><?php echo esc_html($post_bridge_diag['error']); ?></td></tr>
                         </tbody>

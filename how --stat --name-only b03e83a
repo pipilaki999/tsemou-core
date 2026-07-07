@@ -1,0 +1,20 @@
+* [33mb03e83a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/event-intelligence-4.2[m[33m, [m[1;31morigin/feature/event-intelligence-4.2[m[33m)[m Trace runtime pipeline after Evidence creation
+* [33m6720746[m Fix post to evidence integration resolver
+* [33m279c45d[m Fix discovery orchestrator PHP syntax error
+* [33m0c4f68b[m Fix ZIP path separators for WordPress packaging
+* [33m857614a[m Fix Bump plugin version to 5.0.1WordPress packaging and add build script
+* [33m05971b4[m Add WordPress plugin packaging script
+* [33m6b313fc[m Phase D: register missing company post type
+* [33mbc6160c[m Phase C: connect homepage participation links to story pages
+* [33m0140f55[m Phase C: connect knowledge graph statistics to homepage
+* [33m9396857[m Phase C: connect trust score display to backend company data
+* [33m9f3ec51[m Phase C: connect TSEMIT and UNTSEMIT actions
+* [33m1645ab8[m Phase C: connect community feed to backend evidence and stories
+* [33m8904c96[m Phase C: connect living cases to backend stories
+* [33mb187e69[m Phase C: connect community rankings to backend data
+* [33m12de90e[m Phase B: remove obsolete TODO artifacts
+* [33m65af63e[m MVT: restore story-to-orchestrator pipeline integrity
+* [33me01c675[m MVT: fix promotion event dispatch integrity
+* [33ma11f277[m MVT: block promotion when knowledge graph update fails
+* [33mc72c49c[m MVT: finalize lifecycle flow on public page refresh
+* [33mdee7f78[m MVT: bootstrap lifecycle stages on all story saves

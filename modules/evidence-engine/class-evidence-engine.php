@@ -254,6 +254,7 @@ class Evidence_Engine {
 
         $existing = self::find_evidence_by_source_post($input_id);
         if ($existing > 0) {
+            $handoff = self::handoff_resolved_existing_to_orchestrator($input_id, $existing);
             return [
                 'success' => true,
                 'code' => 'resolved_existing',
@@ -264,6 +265,7 @@ class Evidence_Engine {
                 'status' => 'valid',
                 'created' => false,
                 'resolution_meta' => ['_tsemou_evidence_id', '_tsemou_source_post_id', 'source_post_id'],
+                'handoff' => $handoff,
             ];
         }
 
@@ -305,6 +307,102 @@ class Evidence_Engine {
             'created' => true,
             'resolution_meta' => ['_tsemou_evidence_id', '_tsemou_source_post_id', 'source_post_id'],
         ];
+    }
+
+    public static function handoff_resolved_existing_to_orchestrator($post_id, $evidence_id) {
+        $post_id = absint($post_id);
+        $evidence_id = absint($evidence_id);
+
+        $out = [
+            'handoff_triggered' => 'no',
+            'automatic_linking_status' => 'skipped',
+            'automatic_linking_reason' => 'handoff_not_triggered',
+            'knowledge_graph_update_status' => 'skipped',
+            'knowledge_graph_update_reason' => 'automatic_linking_not_executed',
+        ];
+
+        if ($post_id <= 0 || $evidence_id <= 0) {
+            $out['automatic_linking_reason'] = 'invalid_handoff_input';
+            $out['knowledge_graph_update_reason'] = 'invalid_handoff_input';
+            return $out;
+        }
+
+        $out['handoff_triggered'] = 'yes';
+
+        if (!class_exists('\\TSEMOU\\Modules\\DiscoveryOrchestrator\\Discovery_Orchestrator')) {
+            $file = TSEMOU_CORE_PATH . 'modules/discovery-orchestrator/class-discovery-orchestrator.php';
+            if (file_exists($file)) {
+                require_once $file;
+            }
+        }
+
+        if (!class_exists('\\TSEMOU\\Modules\\DiscoveryOrchestrator\\Discovery_Orchestrator')) {
+            $out['automatic_linking_status'] = 'failed';
+            $out['automatic_linking_reason'] = 'discovery_orchestrator_not_loaded';
+            $out['knowledge_graph_update_reason'] = 'automatic_linking_failed';
+            return $out;
+        }
+
+        try {
+            $source_url = get_post_meta($evidence_id, '_tsemou_source_url', true);
+            if (!$source_url) $source_url = get_permalink($post_id);
+
+            $linked_company_ids = self::related_company_ids($evidence_id);
+
+            $handoff_payload = [
+                'evidence_id' => $evidence_id,
+                'raw_id' => 'post_' . $post_id,
+                'source_url' => $source_url,
+                'url' => $source_url,
+                'company_id' => !empty($linked_company_ids) ? intval($linked_company_ids[0]) : 0,
+            ];
+
+            $link_result = \TSEMOU\Modules\DiscoveryOrchestrator\Discovery_Orchestrator::execute_automatic_linking($handoff_payload);
+
+            if (empty($link_result['success'])) {
+                $out['automatic_linking_status'] = 'failed';
+                $out['automatic_linking_reason'] = sanitize_text_field($link_result['message'] ?? 'automatic_linking_failed');
+                $out['knowledge_graph_update_reason'] = 'automatic_linking_failed';
+                return $out;
+            }
+
+            $link_payload = is_array($link_result['payload'] ?? null) ? $link_result['payload'] : $handoff_payload;
+            $link_company_id = absint($link_payload['company_id'] ?? 0);
+            $link_source_id = absint($link_payload['source_id'] ?? 0);
+
+            if ($link_company_id > 0 || $link_source_id > 0) {
+                $out['automatic_linking_status'] = 'success';
+                $out['automatic_linking_reason'] = 'link_candidates_created';
+            } else {
+                $out['automatic_linking_status'] = 'skipped';
+                $out['automatic_linking_reason'] = 'no_company_or_source_candidate';
+            }
+
+            $kg_result = \TSEMOU\Modules\DiscoveryOrchestrator\Discovery_Orchestrator::execute_knowledge_graph_update($link_payload);
+            if (empty($kg_result['success'])) {
+                $out['knowledge_graph_update_status'] = 'failed';
+                $out['knowledge_graph_update_reason'] = sanitize_text_field($kg_result['message'] ?? 'knowledge_graph_update_failed');
+                return $out;
+            }
+
+            $kg_payload = is_array($kg_result['payload'] ?? null) ? $kg_result['payload'] : [];
+            $kg_status = sanitize_key($kg_payload['knowledge_graph_status'] ?? 'graph_update_skipped_needs_review');
+            if ($kg_status === 'graph_context_relation_updated') {
+                $out['knowledge_graph_update_status'] = 'success';
+                $out['knowledge_graph_update_reason'] = 'graph_context_relation_updated';
+            } else {
+                $out['knowledge_graph_update_status'] = 'skipped';
+                $out['knowledge_graph_update_reason'] = $kg_status ?: 'graph_update_skipped_needs_review';
+            }
+
+            return $out;
+        } catch (\Throwable $e) {
+            $out['automatic_linking_status'] = 'failed';
+            $out['automatic_linking_reason'] = 'handoff_exception';
+            $out['knowledge_graph_update_status'] = 'failed';
+            $out['knowledge_graph_update_reason'] = 'handoff_exception';
+            return $out;
+        }
     }
 
 
