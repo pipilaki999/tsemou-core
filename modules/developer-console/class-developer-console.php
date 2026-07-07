@@ -364,6 +364,12 @@ class Developer_Console {
             'linked_entities' => 0,
             'companies_linked' => 0,
             'knowledge_graph_updated' => 'no',
+            'pipeline_step' => 'skipped',
+            'evidence_created' => 'skipped',
+            'entity_linking_executed' => 'skipped',
+            'entities_created' => 0,
+            'bridge_executed' => false,
+            'stage_trace' => [],
             'error' => '',
             'resolution' => null,
         ];
@@ -391,6 +397,16 @@ class Developer_Console {
         $out['resolved_evidence_id'] = $evidence_id;
         $out['evidence_status'] = sanitize_key($resolution['status'] ?? 'valid');
 
+        $bridge = is_array($resolution['bridge'] ?? null) ? $resolution['bridge'] : [];
+        $out['bridge_executed'] = !empty($bridge['executed']);
+        $out['stage_trace'] = is_array($bridge['stage_trace'] ?? null) ? $bridge['stage_trace'] : [];
+
+        $pipeline_steps = is_array($bridge['pipeline_steps'] ?? null) ? $bridge['pipeline_steps'] : [];
+        $out['pipeline_step'] = sanitize_key($pipeline_steps['pipeline_step']['status'] ?? ($out['bridge_executed'] ? 'success' : 'skipped'));
+        $out['evidence_created'] = sanitize_key($pipeline_steps['evidence_created']['status'] ?? ($out['bridge_executed'] ? 'success' : 'skipped'));
+        $out['entity_linking_executed'] = sanitize_key($pipeline_steps['entity_linking_executed']['status'] ?? 'skipped');
+        $out['entities_created'] = absint($bridge['entities_created'] ?? 0);
+
         if ($evidence_id > 0) {
             $company_ids = \TSEMOU\Modules\EvidenceEngine\Evidence_Engine::related_company_ids($evidence_id);
             $out['companies_linked'] = count($company_ids);
@@ -402,7 +418,7 @@ class Developer_Console {
             }
             $out['linked_entities'] = $entity_count;
 
-            $out['knowledge_graph_updated'] = ($entity_count > 0 || !empty($company_ids)) ? 'yes' : 'no';
+            $out['knowledge_graph_updated'] = (!empty($bridge['knowledge_graph_updated']) || $entity_count > 0 || !empty($company_ids)) ? 'yes' : 'no';
         }
 
         return $out;
@@ -510,12 +526,47 @@ class Developer_Console {
                             <tr><th>Post ID</th><td><?php echo esc_html($post_bridge_diag['post_id']); ?></td></tr>
                             <tr><th>Resolved Evidence ID</th><td><?php echo esc_html($post_bridge_diag['resolved_evidence_id']); ?></td></tr>
                             <tr><th>Evidence Status</th><td><?php echo esc_html($post_bridge_diag['evidence_status']); ?></td></tr>
+                            <tr><th>Pipeline Step</th><td><?php echo esc_html($post_bridge_diag['pipeline_step']); ?></td></tr>
+                            <tr><th>Evidence Created</th><td><?php echo esc_html($post_bridge_diag['evidence_created']); ?></td></tr>
+                            <tr><th>Entity Linking Executed</th><td><?php echo esc_html($post_bridge_diag['entity_linking_executed']); ?></td></tr>
+                            <tr><th>Entities Created</th><td><?php echo esc_html($post_bridge_diag['entities_created']); ?></td></tr>
                             <tr><th>Linked Entities</th><td><?php echo esc_html($post_bridge_diag['linked_entities']); ?></td></tr>
                             <tr><th>Companies Linked</th><td><?php echo esc_html($post_bridge_diag['companies_linked']); ?></td></tr>
                             <tr><th>Knowledge Graph Updated</th><td><?php echo esc_html($post_bridge_diag['knowledge_graph_updated']); ?></td></tr>
                             <tr><th>Error</th><td><?php echo esc_html($post_bridge_diag['error']); ?></td></tr>
                         </tbody>
                     </table>
+                    <?php if (!empty($post_bridge_diag['stage_trace'])): ?>
+                        <h3>Stage Trace</h3>
+                        <table class="widefat striped">
+                            <thead>
+                                <tr>
+                                    <th>Stage Name</th>
+                                    <th>Status</th>
+                                    <th>Input</th>
+                                    <th>Output</th>
+                                    <th>Reason</th>
+                                    <th>Records Created</th>
+                                    <th>Existing Records Reused</th>
+                                    <th>Next Stage Triggered</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($post_bridge_diag['stage_trace'] as $stage): ?>
+                                    <tr>
+                                        <td><?php echo esc_html($stage['stage_name'] ?? ''); ?></td>
+                                        <td><?php echo esc_html($stage['executed'] ?? ''); ?></td>
+                                        <td><pre style="margin:0;white-space:pre-wrap;max-width:420px;"><?php echo esc_html(wp_json_encode($stage['input'] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)); ?></pre></td>
+                                        <td><pre style="margin:0;white-space:pre-wrap;max-width:420px;"><?php echo esc_html(wp_json_encode($stage['output'] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)); ?></pre></td>
+                                        <td><?php echo esc_html($stage['reason'] ?? ''); ?></td>
+                                        <td><?php echo esc_html($stage['records_created'] ?? 0); ?></td>
+                                        <td><?php echo esc_html($stage['existing_records_reused'] ?? 0); ?></td>
+                                        <td><?php echo esc_html($stage['next_stage_triggered'] ?? 'no'); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php endif; ?>
                     <pre><?php echo esc_html(wp_json_encode($post_bridge_diag['resolution'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)); ?></pre>
                 <?php endif; ?>
 

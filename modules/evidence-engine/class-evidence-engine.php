@@ -245,6 +245,7 @@ class Evidence_Engine {
                 'status' => 'valid',
                 'created' => false,
                 'resolution_meta' => ['direct_evidence_id'],
+                'bridge' => self::post_bridge_skipped($input_id, $input_type, 'direct_evidence_id'),
             ];
         }
 
@@ -254,6 +255,7 @@ class Evidence_Engine {
 
         $existing = self::find_evidence_by_source_post($input_id);
         if ($existing > 0) {
+            $bridge = self::bridge_post_to_entity_graph($input_id, $existing);
             return [
                 'success' => true,
                 'code' => 'resolved_existing',
@@ -264,6 +266,7 @@ class Evidence_Engine {
                 'status' => 'valid',
                 'created' => false,
                 'resolution_meta' => ['_tsemou_evidence_id', '_tsemou_source_post_id', 'source_post_id'],
+                'bridge' => $bridge,
             ];
         }
 
@@ -294,6 +297,8 @@ class Evidence_Engine {
         update_post_meta($new_id, '_tsemou_source_url', get_permalink($input_id));
         update_post_meta($input_id, '_tsemou_evidence_id', $new_id);
 
+        $bridge = self::bridge_post_to_entity_graph($input_id, $new_id);
+
         return [
             'success' => true,
             'code' => 'resolved_created',
@@ -304,7 +309,313 @@ class Evidence_Engine {
             'status' => 'created',
             'created' => true,
             'resolution_meta' => ['_tsemou_evidence_id', '_tsemou_source_post_id', 'source_post_id'],
+            'bridge' => $bridge,
         ];
+    }
+
+    public static function post_bridge_skipped($post_id, $reason = '', $pipeline_step = 'skipped') {
+        return [
+            'executed' => false,
+            'post_id' => absint($post_id),
+            'reason' => sanitize_key($reason),
+            'pipeline_steps' => [
+                'pipeline_step' => ['status' => sanitize_key($pipeline_step)],
+                'evidence_created' => ['status' => 'skipped'],
+                'entity_linking_executed' => ['status' => 'skipped'],
+                'entities_created' => ['status' => 'skipped', 'count' => 0],
+                'companies_linked' => ['status' => 'skipped', 'count' => 0],
+                'knowledge_graph_updated' => ['status' => 'skipped'],
+            ],
+            'entities_created' => 0,
+            'entities_reused' => 0,
+            'companies_linked' => 0,
+            'knowledge_graph_updated' => false,
+            'linked_entity_ids' => [],
+            'company_ids' => [],
+            'source_id' => 0,
+            'source_entity_id' => 0,
+            'evidence_entity_id' => 0,
+            'link_record' => null,
+            'knowledge_graph' => null,
+        ];
+    }
+
+    public static function bridge_post_to_entity_graph($post_id, $evidence_id) {
+        $post_id = absint($post_id);
+        $evidence_id = absint($evidence_id);
+
+        if ($post_id <= 0 || $evidence_id <= 0) {
+            return self::post_bridge_skipped($post_id, 'invalid_bridge_input');
+        }
+
+        $post = get_post($post_id);
+        $evidence = get_post($evidence_id);
+        if (!$post || !$evidence) {
+            return self::post_bridge_skipped($post_id, 'missing_post_or_evidence');
+        }
+
+        $pipeline = [
+            'pipeline_step' => ['status' => 'success'],
+            'evidence_created' => ['status' => 'success'],
+            'entity_linking_executed' => ['status' => 'failed'],
+            'entities_created' => ['status' => 'failed', 'count' => 0],
+            'companies_linked' => ['status' => 'skipped', 'count' => 0],
+            'knowledge_graph_updated' => ['status' => 'skipped'],
+        ];
+
+        $bridge = [
+            'executed' => true,
+            'post_id' => $post_id,
+            'evidence_id' => $evidence_id,
+            'pipeline_steps' => $pipeline,
+            'stage_trace' => [],
+            'entities_created' => 0,
+            'entities_reused' => 0,
+            'companies_linked' => 0,
+            'knowledge_graph_updated' => false,
+            'linked_entity_ids' => [],
+            'company_ids' => [],
+            'source_id' => 0,
+            'source_entity_id' => 0,
+            'evidence_entity_id' => 0,
+            'link_record' => null,
+            'knowledge_graph' => null,
+        ];
+
+        $post_title = get_the_title($post_id);
+        $post_text = wp_strip_all_tags((string) $post->post_content);
+        $source_url = get_permalink($post_id);
+
+        $company_matches = [];
+        if (class_exists('\TSEMOU\Modules\CompanyIntelligence\Company_Intelligence_Engine')) {
+            $company_matches = 
+                \TSEMOU\Modules\CompanyIntelligence\Company_Intelligence_Engine::detect_in_text($post_title . ' ' . $post_text, 10);
+        }
+
+        $company_ids = [];
+        foreach ($company_matches as $match) {
+            $company_id = absint($match['company_id'] ?? 0);
+            if ($company_id > 0) {
+                $company_ids[] = $company_id;
+            }
+        }
+        $company_ids = array_values(array_unique(array_filter($company_ids)));
+
+        $source_id = 0;
+        if (class_exists('\TSEMOU\Modules\SourceObject\Source_Object_Engine')) {
+            $source_id = absint(\TSEMOU\Modules\SourceObject\Source_Object_Engine::find_or_create_from_url($source_url));
+        }
+
+        $bridge['stage_trace'][] = [
+            'stage_name' => 'Evidence Created',
+            'executed' => 'yes',
+            'input' => [
+                'post_id' => $post_id,
+                'post_type' => $post->post_type,
+                'post_title' => $post_title,
+            ],
+            'output' => [
+                'evidence_id' => $evidence_id,
+                'source_post_id' => $post_id,
+                'source_url' => $source_url,
+            ],
+            'reason' => 'Evidence already created by the resolution step.',
+            'records_created' => 1,
+            'existing_records_reused' => 1,
+            'next_stage_triggered' => 'yes',
+        ];
+
+        $bridge['stage_trace'][] = [
+            'stage_name' => 'Automatic Linking',
+            'executed' => 'yes',
+            'input' => [
+                'evidence_id' => $evidence_id,
+                'source_id' => $source_id,
+                'source_url' => $source_url,
+                'raw_id' => 'post_' . $post_id,
+            ],
+            'output' => [
+                'link_id' => '',
+                'company_id' => $company_ids[0] ?? 0,
+                'source_id' => $source_id,
+            ],
+            'reason' => empty($company_ids) && !$source_id ? 'No company or source candidate was available to anchor a link.' : 'Automatic Linking can evaluate the evidence payload.',
+            'records_created' => 0,
+            'existing_records_reused' => 0,
+            'next_stage_triggered' => 'yes',
+        ];
+
+        $bridge['stage_trace'][] = [
+            'stage_name' => 'Entity Detection',
+            'executed' => 'yes',
+            'input' => [
+                'post_title' => $post_title,
+                'post_content_excerpt' => wp_trim_words($post_text, 20),
+            ],
+            'output' => [
+                'evidence_entity_id' => 0,
+                'source_entity_id' => 0,
+                'company_entity_ids' => [],
+            ],
+            'reason' => 'Entity records are created through Knowledge Graph object resolution when references exist.',
+            'records_created' => 0,
+            'existing_records_reused' => 0,
+            'next_stage_triggered' => 'yes',
+        ];
+
+        $bridge['stage_trace'][] = [
+            'stage_name' => 'Company Matching',
+            'executed' => 'yes',
+            'input' => [
+                'title' => $post_title,
+                'content_excerpt' => wp_trim_words($post_text, 20),
+            ],
+            'output' => [
+                'company_ids' => $company_ids,
+                'match_count' => count($company_ids),
+            ],
+            'reason' => empty($company_ids) ? 'No company text matches were found in the article payload.' : 'Company matches were found and will be carried forward.',
+            'records_created' => 0,
+            'existing_records_reused' => 0,
+            'next_stage_triggered' => 'yes',
+        ];
+
+        $created_entities = 0;
+        $reused_entities = 0;
+        $linked_entity_ids = [];
+
+        if (class_exists('\TSEMOU\Modules\KnowledgeGraph\Knowledge_Graph')) {
+            $existing_evidence_entity = \TSEMOU\Modules\KnowledgeGraph\Knowledge_Graph::find_entity_by_external_ref('evidence', $evidence_id);
+            $evidence_entity_id = absint(\TSEMOU\Modules\KnowledgeGraph\Knowledge_Graph::entity_from_object('evidence', $evidence_id, get_the_title($evidence_id), 'evidence'));
+            if ($evidence_entity_id > 0) {
+                $linked_entity_ids[] = $evidence_entity_id;
+                if ($existing_evidence_entity > 0) {
+                    $reused_entities++;
+                } else {
+                    $created_entities++;
+                }
+            }
+
+            if ($source_id > 0) {
+                $existing_source_entity = \TSEMOU\Modules\KnowledgeGraph\Knowledge_Graph::find_entity_by_external_ref('tsemou_source', $source_id);
+                $source_entity_id = absint(\TSEMOU\Modules\KnowledgeGraph\Knowledge_Graph::entity_from_object('tsemou_source', $source_id, get_the_title($source_id), 'source'));
+                if ($source_entity_id > 0) {
+                    $linked_entity_ids[] = $source_entity_id;
+                    if ($existing_source_entity > 0) {
+                        $reused_entities++;
+                    } else {
+                        $created_entities++;
+                    }
+                }
+            } else {
+                $source_entity_id = 0;
+            }
+
+            foreach ($company_ids as $company_id) {
+                $existing_company_entity = \TSEMOU\Modules\KnowledgeGraph\Knowledge_Graph::find_entity_by_external_ref('company', $company_id);
+                $company_entity_id = absint(\TSEMOU\Modules\KnowledgeGraph\Knowledge_Graph::entity_from_object('company', $company_id, get_the_title($company_id), 'company'));
+                if ($company_entity_id > 0) {
+                    $linked_entity_ids[] = $company_entity_id;
+                    if ($existing_company_entity > 0) {
+                        $reused_entities++;
+                    } else {
+                        $created_entities++;
+                    }
+                }
+            }
+        }
+
+        $bridge['stage_trace'][] = [
+            'stage_name' => 'Knowledge Graph Update',
+            'executed' => 'yes',
+            'input' => [
+                'evidence_id' => $evidence_id,
+                'company_ids' => $company_ids,
+                'source_id' => $source_id,
+                'link_record' => $link_record,
+            ],
+            'output' => [
+                'knowledge_graph_updated' => !empty($kg_result['updated']),
+                'relationship_id' => $kg_result['relationship_id'] ?? '',
+            ],
+            'reason' => !empty($kg_result['updated']) ? 'Knowledge Graph accepted the link payload.' : 'Knowledge Graph update skipped because company or source data was missing.',
+            'records_created' => !empty($kg_result['updated']) ? 1 : 0,
+            'existing_records_reused' => 0,
+            'next_stage_triggered' => 'no',
+        ];
+
+        if (!empty($company_ids)) {
+            update_post_meta($evidence_id, '_tsemou_company_id', intval($company_ids[0]));
+            update_post_meta($evidence_id, '_tsemou_entity_id', intval($company_ids[0]));
+            update_post_meta($evidence_id, '_tsemou_evidence_company', intval($company_ids[0]));
+            update_post_meta($evidence_id, '_tsemou_related_company', intval($company_ids[0]));
+            update_post_meta($evidence_id, '_tsemou_evidence_company_ids', $company_ids);
+            update_post_meta($evidence_id, 'company', $company_ids);
+        }
+
+        if ($source_id > 0) {
+            update_post_meta($evidence_id, '_tsemou_source_id', $source_id);
+        }
+
+        $link_record = null;
+        if (class_exists('\TSEMOU\Modules\AutomaticLinking\Automatic_Linking')) {
+            $process = \TSEMOU\Modules\AutomaticLinking\Automatic_Linking::process([
+                'evidence_id' => $evidence_id,
+                'company_id' => $company_ids[0] ?? 0,
+                'company_name' => $company_ids[0] ? get_the_title($company_ids[0]) : '',
+                'source_id' => $source_id,
+                'source_url' => $source_url,
+                'url' => $source_url,
+                'title' => get_the_title($post_id),
+                'raw_id' => 'post_' . $post_id,
+            ]);
+
+            if (!empty($process['success']) && !empty($process['record'])) {
+                $link_record = $process['record'];
+            }
+        }
+
+        $kg_result = ['success' => false, 'updated' => false, 'message' => 'skipped'];
+        if (!empty($link_record) && class_exists('\TSEMOU\Modules\AutomaticLinking\Automatic_Linking')) {
+            $kg_result = \TSEMOU\Modules\AutomaticLinking\Automatic_Linking::update_knowledge_graph([
+                'link_id' => $link_record['link_id'] ?? '',
+                'company_id' => $company_ids[0] ?? 0,
+                'source_id' => $source_id,
+                'evidence_id' => $evidence_id,
+            ]);
+        }
+
+        if (class_exists('\TSEMOU\Modules\KnowledgeGraph\Knowledge_Graph') && method_exists('\TSEMOU\Modules\KnowledgeGraph\Knowledge_Graph', 'link_evidence_company_source')) {
+            $kg_links = \TSEMOU\Modules\KnowledgeGraph\Knowledge_Graph::link_evidence_company_source($evidence_id);
+            if (!empty($kg_links)) {
+                $kg_result['updated'] = true;
+                $kg_result['success'] = true;
+                $kg_result['message'] = 'Knowledge Graph relations updated.';
+            }
+        }
+
+        $companies_linked = count($company_ids);
+        $pipeline['entity_linking_executed']['status'] = ($created_entities > 0 || $reused_entities > 0 || $source_id > 0) ? 'success' : 'failed';
+        $pipeline['entities_created']['status'] = $created_entities > 0 ? 'success' : 'skipped';
+        $pipeline['entities_created']['count'] = $created_entities;
+        $pipeline['companies_linked']['status'] = $companies_linked > 0 ? 'success' : 'skipped';
+        $pipeline['companies_linked']['count'] = $companies_linked;
+        $pipeline['knowledge_graph_updated']['status'] = !empty($kg_result['updated']) ? 'success' : 'failed';
+
+        $bridge['entities_created'] = $created_entities;
+        $bridge['entities_reused'] = $reused_entities;
+        $bridge['companies_linked'] = $companies_linked;
+        $bridge['knowledge_graph_updated'] = !empty($kg_result['updated']);
+        $bridge['linked_entity_ids'] = array_values(array_unique(array_filter(array_map('absint', $linked_entity_ids))));
+        $bridge['company_ids'] = $company_ids;
+        $bridge['source_id'] = $source_id;
+        $bridge['source_entity_id'] = isset($source_entity_id) ? absint($source_entity_id) : 0;
+        $bridge['evidence_entity_id'] = isset($evidence_entity_id) ? absint($evidence_entity_id) : 0;
+        $bridge['link_record'] = $link_record;
+        $bridge['knowledge_graph'] = $kg_result;
+        $bridge['pipeline_steps'] = $pipeline;
+
+        return $bridge;
     }
 
 
