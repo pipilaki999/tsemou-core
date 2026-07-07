@@ -355,16 +355,74 @@ class Developer_Console {
         ];
     }
 
+    public static function diagnose_post_evidence_bridge($post_id) {
+        $post_id = absint($post_id);
+        $out = [
+            'post_id' => $post_id,
+            'resolved_evidence_id' => 0,
+            'evidence_status' => 'failed',
+            'linked_entities' => 0,
+            'companies_linked' => 0,
+            'knowledge_graph_updated' => 'no',
+            'error' => '',
+            'resolution' => null,
+        ];
+
+        if ($post_id <= 0 || !get_post($post_id)) {
+            $out['error'] = 'invalid_post';
+            return $out;
+        }
+
+        if (!class_exists('\TSEMOU\Modules\EvidenceEngine\Evidence_Engine')) {
+            $out['error'] = 'evidence_engine_not_loaded';
+            return $out;
+        }
+
+        $resolution = \TSEMOU\Modules\EvidenceEngine\Evidence_Engine::resolve_post_or_evidence_id($post_id, true);
+        $out['resolution'] = $resolution;
+
+        if (empty($resolution['success'])) {
+            $out['error'] = sanitize_key($resolution['code'] ?? 'evidence_creation_failed');
+            $out['evidence_status'] = 'failed';
+            return $out;
+        }
+
+        $evidence_id = absint($resolution['evidence_id'] ?? 0);
+        $out['resolved_evidence_id'] = $evidence_id;
+        $out['evidence_status'] = sanitize_key($resolution['status'] ?? 'valid');
+
+        if ($evidence_id > 0) {
+            $company_ids = \TSEMOU\Modules\EvidenceEngine\Evidence_Engine::related_company_ids($evidence_id);
+            $out['companies_linked'] = count($company_ids);
+
+            $entity_count = 0;
+            foreach (['_tsemou_entity_id','entity_id'] as $key) {
+                $value = get_post_meta($evidence_id, $key, true);
+                if (is_numeric($value) && absint($value) > 0) $entity_count++;
+            }
+            $out['linked_entities'] = $entity_count;
+
+            $out['knowledge_graph_updated'] = ($entity_count > 0 || !empty($company_ids)) ? 'yes' : 'no';
+        }
+
+        return $out;
+    }
+
     public function render_page() {
         if (!current_user_can('manage_options')) return;
 
         $company_id = 0;
         if (!empty($_GET['company_id'])) $company_id = absint($_GET['company_id']);
         if (!$company_id && !empty($_GET['company_name'])) $company_id = self::find_company_id_by_name($_GET['company_name']);
+        $post_id = !empty($_GET['post_id']) ? absint($_GET['post_id']) : 0;
 
         $diag = null;
+        $post_bridge_diag = null;
         if (!empty($_GET['run_diagnostics'])) {
             $diag = self::run_full_diagnostics($company_id);
+            if ($post_id) {
+                $post_bridge_diag = self::diagnose_post_evidence_bridge($post_id);
+            }
         }
 
         $engine_rows = self::engine_rows();
@@ -401,6 +459,8 @@ class Developer_Console {
                 <input type="number" name="company_id" value="<?php echo esc_attr($company_id ?: ''); ?>" placeholder="e.g. 7723" style="width:160px;">
                 <label style="margin-left:12px;"><strong>or Company name</strong></label>
                 <input type="text" name="company_name" value="<?php echo esc_attr($_GET['company_name'] ?? ''); ?>" placeholder="e.g. Starbucks" style="width:220px;">
+                <label style="margin-left:12px;"><strong>Article Post ID</strong></label>
+                <input type="number" name="post_id" value="<?php echo esc_attr($post_id ?: ''); ?>" placeholder="e.g. 9637" style="width:140px;">
                 <button class="button button-primary">Run Full Diagnostics</button>
             </form>
 
@@ -443,6 +503,22 @@ class Developer_Console {
             </table>
 
             <?php if ($diag): ?>
+                <?php if ($post_bridge_diag): ?>
+                    <h2>Post to Evidence Integration Debug</h2>
+                    <table class="widefat striped">
+                        <tbody>
+                            <tr><th>Post ID</th><td><?php echo esc_html($post_bridge_diag['post_id']); ?></td></tr>
+                            <tr><th>Resolved Evidence ID</th><td><?php echo esc_html($post_bridge_diag['resolved_evidence_id']); ?></td></tr>
+                            <tr><th>Evidence Status</th><td><?php echo esc_html($post_bridge_diag['evidence_status']); ?></td></tr>
+                            <tr><th>Linked Entities</th><td><?php echo esc_html($post_bridge_diag['linked_entities']); ?></td></tr>
+                            <tr><th>Companies Linked</th><td><?php echo esc_html($post_bridge_diag['companies_linked']); ?></td></tr>
+                            <tr><th>Knowledge Graph Updated</th><td><?php echo esc_html($post_bridge_diag['knowledge_graph_updated']); ?></td></tr>
+                            <tr><th>Error</th><td><?php echo esc_html($post_bridge_diag['error']); ?></td></tr>
+                        </tbody>
+                    </table>
+                    <pre><?php echo esc_html(wp_json_encode($post_bridge_diag['resolution'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)); ?></pre>
+                <?php endif; ?>
+
                 <h2>Diagnostic Result</h2>
                 <pre><?php echo esc_html(wp_json_encode($diag, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)); ?></pre>
 

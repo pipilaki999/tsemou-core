@@ -185,6 +185,128 @@ class Evidence_Engine {
         return $warnings;
     }
 
+    public static function find_evidence_by_source_post($post_id) {
+        $post_id = absint($post_id);
+        if ($post_id <= 0) return 0;
+
+        $linked = absint(get_post_meta($post_id, '_tsemou_evidence_id', true));
+        if ($linked > 0 && in_array(get_post_type($linked), self::evidence_post_types(), true)) {
+            return $linked;
+        }
+
+        $types = self::evidence_post_types();
+        if (empty($types)) return 0;
+
+        $q = get_posts([
+            'post_type' => $types,
+            'post_status' => ['publish','draft','pending','private'],
+            'posts_per_page' => 1,
+            'orderby' => 'modified',
+            'order' => 'DESC',
+            'meta_query' => [
+                'relation' => 'OR',
+                ['key' => '_tsemou_source_post_id', 'value' => $post_id, 'compare' => '='],
+                ['key' => 'source_post_id', 'value' => $post_id, 'compare' => '='],
+            ],
+        ]);
+
+        if (!empty($q)) {
+            $evidence_id = absint($q[0]->ID);
+            if ($evidence_id > 0) {
+                update_post_meta($post_id, '_tsemou_evidence_id', $evidence_id);
+                return $evidence_id;
+            }
+        }
+
+        return 0;
+    }
+
+    public static function resolve_post_or_evidence_id($input_id, $auto_create = true) {
+        $input_id = absint($input_id);
+        if ($input_id <= 0) {
+            return ['success' => false, 'code' => 'invalid_post', 'message' => 'Invalid ID.', 'input_id' => 0, 'input_type' => '', 'evidence_id' => 0, 'status' => 'failed', 'created' => false];
+        }
+
+        $post = get_post($input_id);
+        if (!$post) {
+            return ['success' => false, 'code' => 'invalid_post', 'message' => 'Post does not exist.', 'input_id' => $input_id, 'input_type' => '', 'evidence_id' => 0, 'status' => 'failed', 'created' => false];
+        }
+
+        $input_type = sanitize_key($post->post_type);
+
+        if (in_array($input_type, self::evidence_post_types(), true)) {
+            return [
+                'success' => true,
+                'code' => 'valid_evidence',
+                'message' => 'Input already refers to an evidence record.',
+                'input_id' => $input_id,
+                'input_type' => $input_type,
+                'evidence_id' => $input_id,
+                'status' => 'valid',
+                'created' => false,
+                'resolution_meta' => ['direct_evidence_id'],
+            ];
+        }
+
+        if ($input_type !== 'post') {
+            return ['success' => false, 'code' => 'invalid_post', 'message' => 'ID is not an Evidence ID and not a WordPress article post.', 'input_id' => $input_id, 'input_type' => $input_type, 'evidence_id' => 0, 'status' => 'failed', 'created' => false];
+        }
+
+        $existing = self::find_evidence_by_source_post($input_id);
+        if ($existing > 0) {
+            return [
+                'success' => true,
+                'code' => 'resolved_existing',
+                'message' => 'Existing evidence linked to article was found.',
+                'input_id' => $input_id,
+                'input_type' => $input_type,
+                'evidence_id' => $existing,
+                'status' => 'valid',
+                'created' => false,
+                'resolution_meta' => ['_tsemou_evidence_id', '_tsemou_source_post_id', 'source_post_id'],
+            ];
+        }
+
+        if (!$auto_create) {
+            return ['success' => false, 'code' => 'no_linked_evidence', 'message' => 'No Evidence linked to this article.', 'input_id' => $input_id, 'input_type' => $input_type, 'evidence_id' => 0, 'status' => 'failed', 'created' => false];
+        }
+
+        $types = self::evidence_post_types();
+        $target_type = in_array('evidence', $types, true) ? 'evidence' : (in_array('tsemou_proof', $types, true) ? 'tsemou_proof' : '');
+        if ($target_type === '') {
+            return ['success' => false, 'code' => 'evidence_creation_failed', 'message' => 'No evidence post type is available for creation.', 'input_id' => $input_id, 'input_type' => $input_type, 'evidence_id' => 0, 'status' => 'failed', 'created' => false];
+        }
+
+        $new_id = wp_insert_post([
+            'post_type' => $target_type,
+            'post_status' => 'draft',
+            'post_title' => get_the_title($input_id),
+            'post_content' => get_post_field('post_content', $input_id),
+        ], true);
+
+        if (is_wp_error($new_id) || !$new_id) {
+            return ['success' => false, 'code' => 'evidence_creation_failed', 'message' => 'Evidence creation failed from article post.', 'input_id' => $input_id, 'input_type' => $input_type, 'evidence_id' => 0, 'status' => 'failed', 'created' => false];
+        }
+
+        $new_id = absint($new_id);
+        update_post_meta($new_id, '_tsemou_source_post_id', $input_id);
+        update_post_meta($new_id, 'source_post_id', $input_id);
+        update_post_meta($new_id, '_tsemou_source_url', get_permalink($input_id));
+        update_post_meta($input_id, '_tsemou_evidence_id', $new_id);
+
+        return [
+            'success' => true,
+            'code' => 'resolved_created',
+            'message' => 'Evidence created from article post and linked.',
+            'input_id' => $input_id,
+            'input_type' => $input_type,
+            'evidence_id' => $new_id,
+            'status' => 'created',
+            'created' => true,
+            'resolution_meta' => ['_tsemou_evidence_id', '_tsemou_source_post_id', 'source_post_id'],
+        ];
+    }
+
 
 
     public static function credibility_with_source($evidence_id, $source_url = '') {
@@ -318,14 +440,15 @@ class Evidence_Engine {
         if (!current_user_can('manage_options')) return;
         $evidence_id = !empty($_GET['evidence_id']) ? absint($_GET['evidence_id']) : 0;
         $company_id = !empty($_GET['company_id']) ? absint($_GET['company_id']) : 0;
+        $resolution = $evidence_id ? self::resolve_post_or_evidence_id($evidence_id, true) : null;
         ?>
         <div class="wrap">
             <h1>TSEMOU Evidence Engine</h1>
             <p>v2.8.0 normalization + validation + source object layer for evidence metadata, relationships and validation.</p>
             <form method="get" style="background:#fff;border:1px solid #dbe3ef;padding:16px;border-radius:14px;margin-bottom:20px;">
                 <input type="hidden" name="page" value="tsemou-evidence-engine">
-                <label><strong>Evidence ID</strong></label>
-                <input type="number" name="evidence_id" value="<?php echo esc_attr($evidence_id ?: ''); ?>" style="width:140px;">
+                <label><strong>Evidence ID or Post ID</strong></label>
+                <input type="number" name="evidence_id" value="<?php echo esc_attr($evidence_id ?: ''); ?>" style="width:180px;">
                 <label style="margin-left:12px;"><strong>Company ID</strong></label>
                 <input type="number" name="company_id" value="<?php echo esc_attr($company_id ?: ''); ?>" style="width:140px;">
                 <button class="button button-primary">Inspect</button>
@@ -336,10 +459,15 @@ class Evidence_Engine {
                 <tr><th>Engine class</th><td>loaded</td></tr>
             </tbody></table>
             <?php if ($evidence_id): ?>
+                <h2>Post to Evidence Resolution</h2>
+                <pre style="background:#071226;color:#e2e8f0;padding:14px;border-radius:12px;overflow:auto;"><?php echo esc_html(wp_json_encode($resolution, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)); ?></pre>
+                <?php if (!empty($resolution['code']) && $resolution['code'] === 'no_linked_evidence'): ?>
+                    <p><strong>No Evidence linked to this article.</strong></p>
+                <?php endif; ?>
                 <h2>Evidence Validation Output</h2>
                 <pre style="background:#071226;color:#e2e8f0;padding:14px;border-radius:12px;overflow:auto;"><?php echo esc_html(wp_json_encode(Evidence_Validator::validate($evidence_id), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)); ?></pre>
                 <h2>Evidence Normalized Output</h2>
-                <pre style="background:#071226;color:#e2e8f0;padding:14px;border-radius:12px;overflow:auto;"><?php echo esc_html(wp_json_encode(self::get($evidence_id), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)); ?></pre>
+                <pre style="background:#071226;color:#e2e8f0;padding:14px;border-radius:12px;overflow:auto;"><?php echo esc_html(wp_json_encode(!empty($resolution['evidence_id']) ? self::get($resolution['evidence_id']) : null, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)); ?></pre>
             <?php endif; ?>
             <?php if ($company_id): ?>
                 <h2>Company Evidence Validation Output</h2>

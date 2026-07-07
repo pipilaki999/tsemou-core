@@ -26,7 +26,23 @@ class Evidence_Validator {
             ];
         }
 
-        $evidence = Evidence_Engine::get($evidence_id);
+        $resolution = Evidence_Engine::resolve_post_or_evidence_id($evidence_id, true);
+        if (empty($resolution['success'])) {
+            $code = sanitize_key($resolution['code'] ?? 'invalid_evidence');
+            return [
+                'evidence_id' => $evidence_id,
+                'valid' => false,
+                'ready_for_trust' => false,
+                'score' => 0,
+                'errors' => [$code],
+                'warnings' => [],
+                'checks' => [],
+                'resolution' => $resolution,
+            ];
+        }
+
+        $resolved_evidence_id = absint($resolution['evidence_id'] ?? 0);
+        $evidence = Evidence_Engine::get($resolved_evidence_id);
 
         if (!$evidence) {
             return [
@@ -37,6 +53,7 @@ class Evidence_Validator {
                 'errors' => ['invalid_evidence'],
                 'warnings' => [],
                 'checks' => [],
+                'resolution' => $resolution,
             ];
         }
 
@@ -65,7 +82,7 @@ class Evidence_Validator {
         $ready_for_trust = empty($errors) && $score >= 70;
 
         return [
-            'evidence_id' => $evidence_id,
+            'evidence_id' => $resolved_evidence_id,
             'title' => $evidence['title'] ?? '',
             'valid' => empty($errors),
             'ready_for_trust' => $ready_for_trust,
@@ -74,6 +91,7 @@ class Evidence_Validator {
             'warnings' => $warnings,
             'checks' => $checks,
             'normalized' => $evidence,
+            'resolution' => $resolution,
         ];
     }
 
