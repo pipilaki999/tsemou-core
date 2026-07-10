@@ -65,6 +65,7 @@ class Core {
         $this->trace_require('modules/event-intelligence/class-event-intelligence-orchestrator.php');
         $this->trace_require('modules/story/class-story-module.php');
         $this->trace_require('modules/trust-engine/class-trust-engine.php');
+        $this->trace_require('modules/participation-engine/class-participation-runtime.php');
         if (class_exists('\TSEMOU\Modules\ConfigurationOS\Configuration_OS') && method_exists('\TSEMOU\Modules\ConfigurationOS\Configuration_OS', 'instance')) { $this->trace_instance('\\TSEMOU\Modules\ConfigurationOS\Configuration_OS'); }
         if (class_exists('\TSEMOU\Modules\DiscoveryOrchestrator\Discovery_Orchestrator') && method_exists('\TSEMOU\Modules\DiscoveryOrchestrator\Discovery_Orchestrator', 'instance')) { $this->trace_instance('\\TSEMOU\Modules\DiscoveryOrchestrator\Discovery_Orchestrator'); }
         if (class_exists('\TSEMOU\Modules\SourceDiscovery\Source_Discovery') && method_exists('\TSEMOU\Modules\SourceDiscovery\Source_Discovery', 'instance')) { $this->trace_instance('\\TSEMOU\Modules\SourceDiscovery\Source_Discovery'); }
@@ -97,6 +98,7 @@ class Core {
         if (class_exists('\TSEMOU\Modules\EventIntelligence\Event_Intelligence_Orchestrator') && method_exists('\TSEMOU\Modules\EventIntelligence\Event_Intelligence_Orchestrator', 'instance')) { $this->trace_instance('\\TSEMOU\Modules\EventIntelligence\Event_Intelligence_Orchestrator'); }
         if (class_exists('\TSEMOU\Modules\Story\Story_Module') && method_exists('\TSEMOU\Modules\Story\Story_Module', 'instance')) { $this->trace_instance('\\TSEMOU\Modules\Story\Story_Module'); }
         if (class_exists('\TSEMOU\Modules\TrustEngine\Trust_Engine') && method_exists('\TSEMOU\Modules\TrustEngine\Trust_Engine', 'instance')) { $this->trace_instance('\\TSEMOU\Modules\TrustEngine\Trust_Engine'); }
+        if (class_exists('\TSEMOU\Modules\ParticipationEngine\Participation_Runtime') && method_exists('\TSEMOU\Modules\ParticipationEngine\Participation_Runtime', 'instance')) { $this->trace_instance('\TSEMOU\Modules\ParticipationEngine\Participation_Runtime'); }
     }
     private function trace($message) {
         if (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
