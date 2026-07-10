@@ -36,6 +36,7 @@ class Core {
         $this->trace_require('modules/source-object/class-source-object-engine.php');
         $this->trace_require('modules/developer-console/class-developer-console.php');
         $this->trace_require('modules/company-intelligence/class-company-intelligence.php');
+        $this->trace_require('modules/homepage-beta/class-homepage-beta.php');
         $this->trace_require('modules/policy-engine/class-policy-engine.php');
         $this->trace_require('modules/proof-engine/class-proof-engine.php');
         $this->trace_require('modules/company-engine/class-company-engine.php');
@@ -86,6 +87,7 @@ class Core {
         if (class_exists('\TSEMOU\Modules\CompanyIntelligence\Company_Intelligence_Engine') && method_exists('\TSEMOU\Modules\CompanyIntelligence\Company_Intelligence_Engine', 'instance')) { $this->trace_instance('\\TSEMOU\Modules\CompanyIntelligence\Company_Intelligence_Engine'); }
         if (class_exists('\TSEMOU\Modules\SourceObject\Source_Object_Engine') && method_exists('\TSEMOU\Modules\SourceObject\Source_Object_Engine', 'instance')) { $this->trace_instance('\\TSEMOU\Modules\SourceObject\Source_Object_Engine'); }
         if (class_exists('\TSEMOU\Modules\CompanyIntelligence\Company_Intelligence') && method_exists('\TSEMOU\Modules\CompanyIntelligence\Company_Intelligence', 'instance')) { $this->trace_instance('\\TSEMOU\Modules\CompanyIntelligence\Company_Intelligence'); }
+        if (class_exists('\TSEMOU\Modules\HomepageBeta\Homepage_Beta') && method_exists('\TSEMOU\Modules\HomepageBeta\Homepage_Beta', 'instance')) { $this->trace_instance('\\TSEMOU\Modules\HomepageBeta\Homepage_Beta'); }
         if (class_exists('\TSEMOU\Modules\PolicyEngine\Policy_Engine') && method_exists('\TSEMOU\Modules\PolicyEngine\Policy_Engine', 'instance')) { $this->trace_instance('\\TSEMOU\Modules\PolicyEngine\Policy_Engine'); }
         if (class_exists('\TSEMOU\Modules\ProofEngine\Proof_Engine') && method_exists('\TSEMOU\Modules\ProofEngine\Proof_Engine', 'instance')) { $this->trace_instance('\\TSEMOU\Modules\ProofEngine\Proof_Engine'); }
         if (class_exists('\TSEMOU\Modules\CompanyEngine\Company_Engine') && method_exists('\TSEMOU\Modules\CompanyEngine\Company_Engine', 'instance')) { $this->trace_instance('\\TSEMOU\Modules\CompanyEngine\Company_Engine'); }

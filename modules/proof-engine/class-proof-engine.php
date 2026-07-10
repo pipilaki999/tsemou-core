@@ -228,8 +228,22 @@ class Proof_Engine {
     public static function create_or_update_for_story($story_id, $payload = []) {
         $story_id = absint($story_id);
         $payload = is_array($payload) ? $payload : [];
+        $incoming_post_id = absint($payload['source_story_id'] ?? $payload['meta']['story_id'] ?? $payload['meta']['post_id'] ?? 0);
+
+        self::pipeline_trace('stage_6_story_lookup_incoming_story_id', [
+            'incoming_story_id' => $story_id,
+            'incoming_post_id' => $incoming_post_id,
+            'repository_used' => 'wp_get_post',
+        ]);
 
         if ($story_id <= 0) {
+            self::pipeline_trace('stage_6_story_lookup_result', [
+                'incoming_story_id' => $story_id,
+                'repository_used' => 'wp_get_post',
+                'returned_object_class' => 'null',
+                'database_lookup_result' => 'skipped_invalid_id',
+                'returned_null_reason' => 'invalid_story_id',
+            ]);
             return [
                 'success' => false,
                 'proof_id' => 0,
@@ -238,8 +252,63 @@ class Proof_Engine {
             ];
         }
 
+        global $wpdb;
+        $db_row = $wpdb->get_row($wpdb->prepare(
+            "SELECT ID, post_type, post_status FROM {$wpdb->posts} WHERE ID = %d LIMIT 1",
+            $story_id
+        ));
+        $db_lookup = [
+            'found' => $db_row ? 'yes' : 'no',
+            'post_type' => $db_row ? sanitize_key((string) $db_row->post_type) : '',
+            'post_status' => $db_row ? sanitize_key((string) $db_row->post_status) : '',
+        ];
+
+        self::pipeline_trace('stage_6_story_lookup_attempted', [
+            'incoming_story_id' => $story_id,
+            'incoming_post_id' => $incoming_post_id,
+            'repository_used' => 'wp_get_post',
+            'database_lookup_result' => $db_lookup,
+            'lookup_arguments' => [
+                'post_id' => $story_id,
+                'fields' => 'all',
+            ],
+        ]);
+
+        self::pipeline_trace('stage_6_story_lookup_pre_get_post', [
+            'incoming_story_id' => $story_id,
+            'incoming_post_id' => $incoming_post_id,
+            'lookup_function' => 'get_post',
+            'lookup_arguments' => [
+                'post_id' => $story_id,
+            ],
+        ]);
+
         $story = get_post($story_id);
-        if (!$story || $story->post_type !== 'story') {
+        $returned_class = is_object($story) ? get_class($story) : 'null';
+        $returned_type = ($story instanceof \WP_Post) ? sanitize_key((string) $story->post_type) : '';
+        $returned_status = ($story instanceof \WP_Post) ? sanitize_key((string) $story->post_status) : '';
+
+        $null_reason = '';
+        if (!$story) {
+            $null_reason = 'get_post_returned_null';
+        } elseif (!($story instanceof \WP_Post)) {
+            $null_reason = 'get_post_returned_non_wp_post';
+        } elseif (!in_array($story->post_type, ['story', 'post'], true)) {
+            $null_reason = 'post_type_not_supported';
+        }
+
+        self::pipeline_trace('stage_6_story_lookup_result', [
+            'incoming_story_id' => $story_id,
+            'incoming_post_id' => $incoming_post_id,
+            'repository_used' => 'wp_get_post',
+            'returned_object_class' => $returned_class,
+            'returned_post_type' => $returned_type,
+            'returned_post_status' => $returned_status,
+            'database_lookup_result' => $db_lookup,
+            'returned_null_reason' => $null_reason,
+        ]);
+
+        if (!$story || !in_array($story->post_type, ['story', 'post'], true)) {
             return [
                 'success' => false,
                 'proof_id' => 0,
@@ -251,6 +320,13 @@ class Proof_Engine {
         $existing = self::get_proofs_for_file($story_id);
         $proof = !empty($existing) ? $existing[0] : null;
         $action = $proof ? 'updated' : 'created';
+
+        self::pipeline_trace('stage_6_proof_creation_started', [
+            'story_id' => $story_id,
+            'story_post_type' => sanitize_key((string) ($story->post_type ?? '')),
+            'proof_exists' => $proof ? 'yes' : 'no',
+            'executed' => 'yes',
+        ]);
 
         $post_data = [
             'post_title' => sanitize_text_field($payload['title'] ?? get_the_title($story)),
@@ -267,6 +343,12 @@ class Proof_Engine {
         }
 
         if (is_wp_error($proof_id) || !$proof_id) {
+            self::pipeline_trace('stage_6_proof_id_resolved', [
+                'story_id' => $story_id,
+                'proof_id' => 0,
+                'executed' => 'no',
+                'reason' => 'proof_save_failed',
+            ]);
             return [
                 'success' => false,
                 'proof_id' => 0,
@@ -274,6 +356,10 @@ class Proof_Engine {
                 'message' => 'Could not save proof.'
             ];
         }
+
+        $proof_post_type = sanitize_key((string) get_post_type($proof_id));
+        $proof_post_status = sanitize_key((string) get_post_status($proof_id));
+        $created_or_reused = $action === 'created' ? 'created' : 'reused';
 
         update_post_meta($proof_id, '_tsemou_related_file', $story_id);
         update_post_meta($proof_id, '_tsemou_proof_source', sanitize_text_field($payload['source'] ?? 'story_processing'));
@@ -307,12 +393,57 @@ class Proof_Engine {
         $engine->build_and_save_evidence_intelligence($proof_id);
         $engine->sync_evidence_to_companies($proof_id);
 
+        self::pipeline_trace('stage_6_proof_created', [
+            'story_id' => $story_id,
+            'proof_id' => intval($proof_id),
+            'executed' => 'yes',
+            'action' => $action,
+            'created_or_reused' => $created_or_reused,
+            'post_type' => $proof_post_type,
+            'post_status' => $proof_post_status,
+        ]);
+
+        self::pipeline_trace('stage_6_proof_id_resolved', [
+            'story_id' => $story_id,
+            'proof_id' => intval($proof_id),
+            'executed' => 'yes',
+            'reason' => 'proof_saved',
+            'created_or_reused' => $created_or_reused,
+            'post_type' => $proof_post_type,
+            'post_status' => $proof_post_status,
+            'evidence_post_id' => $proof_post_type === 'evidence' ? intval($proof_id) : 0,
+            'admin_visible_evidence_count' => self::count_admin_visible_posts('evidence'),
+            'admin_visible_tsemou_proof_count' => self::count_admin_visible_posts('tsemou_proof'),
+        ]);
+
         return [
             'success' => true,
             'proof_id' => intval($proof_id),
             'action' => $action,
             'message' => 'Proof ' . $action . '.'
         ];
+    }
+
+    private static function pipeline_trace($stage, $context = []) {
+        if (!(defined('WP_DEBUG_LOG') && WP_DEBUG_LOG)) return;
+
+        $payload = is_array($context) ? $context : [];
+        $payload['stage'] = sanitize_text_field((string) $stage);
+        $payload['ts'] = current_time('mysql');
+        error_log('[TSEMOU_PIPELINE_TRACE] ' . wp_json_encode($payload));
+    }
+
+    private static function count_admin_visible_posts($post_type) {
+        if (!post_type_exists($post_type)) return 0;
+
+        $counts = wp_count_posts($post_type);
+        if (!is_object($counts)) return 0;
+
+        $total = 0;
+        foreach (['publish', 'draft', 'pending', 'private'] as $status) {
+            $total += isset($counts->$status) ? intval($counts->$status) : 0;
+        }
+        return $total;
     }
     /**
      * Evidence Engine v0.9.8
@@ -585,6 +716,49 @@ class Proof_Engine {
         return $default;
     }
 
+    public static function normalize_relationship_ids($value) {
+        $ids = [];
+
+        if ($value === '' || $value === null) {
+            return [];
+        }
+
+        if (is_numeric($value)) {
+            return [intval($value)];
+        }
+
+        if (is_object($value) && isset($value->ID)) {
+            return [intval($value->ID)];
+        }
+
+        if (is_array($value)) {
+            foreach ($value as $item) {
+                $ids = array_merge($ids, self::normalize_relationship_ids($item));
+            }
+            return array_values(array_unique(array_filter(array_map('intval', $ids))));
+        }
+
+        if (is_string($value)) {
+            $maybe = maybe_unserialize($value);
+            if ($maybe !== $value) {
+                return self::normalize_relationship_ids($maybe);
+            }
+
+            if (strpos($value, ',') !== false) {
+                foreach (explode(',', $value) as $piece) {
+                    $piece = trim($piece);
+                    if (is_numeric($piece)) {
+                        $ids[] = intval($piece);
+                    }
+                }
+            } elseif (is_numeric(trim($value))) {
+                $ids[] = intval(trim($value));
+            }
+        }
+
+        return array_values(array_unique(array_filter(array_map('intval', $ids))));
+    }
+
     public function build_and_save_evidence_intelligence($proof_id) {
         $output = self::build_evidence_intelligence($proof_id);
         update_post_meta($proof_id, '_tsemou_evidence_intelligence', wp_json_encode($output, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
@@ -655,7 +829,6 @@ class Proof_Engine {
             'weights' => $weights,
             'categories' => self::normalize_categories(self::profile_value($profile, 'classification.category', [])),
             'relationships' => self::profile_value($profile, 'relationships', []),
-            'relationship_summary' => self::relationship_summary(self::profile_value($profile, 'relationships', [])),
             'explainability' => [
                 'summary' => self::impact_summary($impact),
                 'reasons' => $reasons,

@@ -73,6 +73,56 @@ class Developer_Console {
         return ['exists'=>true, 'total'=>$total, 'by_status'=>$by_status];
     }
 
+    public static function proof_first_evidence_counts() {
+        $proof = self::count_posts('tsemou_proof');
+        $legacy = self::count_posts('evidence');
+
+        if (!empty($proof['exists']) && intval($proof['total']) > 0) {
+            return [
+                'exists' => true,
+                'total' => intval($proof['total']),
+                'by_status' => $proof['by_status'] ?? [],
+                'source' => 'post_type: tsemou_proof',
+                'fallback' => false,
+            ];
+        }
+
+        if (!empty($legacy['exists'])) {
+            return [
+                'exists' => true,
+                'total' => intval($legacy['total']),
+                'by_status' => $legacy['by_status'] ?? [],
+                'source' => 'post_type: evidence (fallback)',
+                'fallback' => true,
+            ];
+        }
+
+        if (!empty($proof['exists'])) {
+            return [
+                'exists' => true,
+                'total' => 0,
+                'by_status' => $proof['by_status'] ?? [],
+                'source' => 'post_type: tsemou_proof',
+                'fallback' => false,
+            ];
+        }
+
+        return [
+            'exists' => false,
+            'total' => 0,
+            'by_status' => [],
+            'source' => 'post_type: none',
+            'fallback' => false,
+        ];
+    }
+
+    public static function proof_first_evidence_post_types() {
+        $types = [];
+        if (post_type_exists('tsemou_proof')) $types[] = 'tsemou_proof';
+        if (post_type_exists('evidence')) $types[] = 'evidence';
+        return $types;
+    }
+
     public static function detect_classes() {
         return [
             'Company Discovery' => class_exists('\TSEMOU\Modules\CompanyDiscovery\Company_Discovery'),
@@ -86,7 +136,7 @@ class Developer_Console {
 
     public static function engine_rows() {
         $company = self::count_posts('company');
-        $evidence = self::count_posts('evidence');
+        $evidence = self::proof_first_evidence_counts();
         $events = self::count_posts('tsemou_event');
         $entities = self::count_posts('tsemou_entity');
         $proofs = self::count_posts('tsemou_proof');
@@ -106,7 +156,7 @@ class Developer_Console {
                 'engine' => 'Evidence / TSEMIDENCE Engine',
                 'status' => $evidence['exists'] ? 'loaded' : 'missing',
                 'records' => $evidence['total'],
-                'source' => 'post_type: evidence + relationship meta',
+                'source' => ($evidence['source'] ?? 'post_type: tsemou_proof') . ' + relationship meta',
                 'class' => !empty($classes['Company Section Engine']) ? 'section engine loaded' : 'section engine missing',
                 'next' => 'Connect evidence relationships reliably'
             ],
@@ -272,10 +322,11 @@ class Developer_Console {
 
     public static function diagnose_evidence_candidates($company_id) {
         $candidates = [];
-        if (!post_type_exists('evidence')) return $candidates;
+        $types = self::proof_first_evidence_post_types();
+        if (empty($types)) return $candidates;
 
         $q = new \WP_Query([
-            'post_type' => 'evidence',
+            'post_type' => $types,
             'post_status' => ['publish','pending','draft','private'],
             'posts_per_page' => 30,
             'orderby' => 'modified',

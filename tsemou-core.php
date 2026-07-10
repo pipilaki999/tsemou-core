@@ -2,7 +2,7 @@
 /**
  * Plugin Name: TSEMOU Core Dev
  * Description: Autonomous TSEMOU OS 3.0 development core for tsemoulab.com.
- * Version: 5.0.1
+ * Version: 5.2.2
  * Author: TSEMOU
  */
 if (!defined('ABSPATH')) exit;
@@ -15,7 +15,7 @@ if (defined('TSEMOU_CORE_DEV_ALREADY_LOADED')) {
     return;
 }
 define('TSEMOU_CORE_DEV_ALREADY_LOADED', true);
-define('TSEMOU_CORE_VERSION', '5.0.1');
+define('TSEMOU_CORE_VERSION', '5.2.2');
 define('TSEMOU_CORE_PATH', plugin_dir_path(__FILE__));
 define('TSEMOU_CORE_URL', plugin_dir_url(__FILE__));
 
@@ -58,9 +58,16 @@ if (!function_exists('tsemou_core_dev_os_dashboard_render')) {
             wp_die('Sorry, you are not allowed to access this page.');
         }
 
+        $proof_counts = post_type_exists('tsemou_proof') ? wp_count_posts('tsemou_proof') : null;
+        $legacy_evidence_counts = post_type_exists('evidence') ? wp_count_posts('evidence') : null;
+        $evidence_counts = $proof_counts;
+        if (!$evidence_counts && $legacy_evidence_counts) {
+            $evidence_counts = $legacy_evidence_counts;
+        }
+
         $counts = [
             'Companies' => post_type_exists('company') ? wp_count_posts('company') : null,
-            'Evidence' => post_type_exists('evidence') ? wp_count_posts('evidence') : null,
+            'Evidence' => $evidence_counts,
             'Sources' => post_type_exists('tsemou_source') ? wp_count_posts('tsemou_source') : null,
             'Entities' => post_type_exists('tsemou_entity') ? wp_count_posts('tsemou_entity') : null,
         ];
@@ -192,6 +199,35 @@ if (!function_exists('tsemou_hard_count_posts')) {
     }
 }
 
+if (!function_exists('tsemou_hard_proof_first_evidence_count')) {
+    function tsemou_hard_proof_first_evidence_count() {
+        $proof = tsemou_hard_count_posts('tsemou_proof');
+        if (!empty($proof['exists']) && intval($proof['total']) > 0) {
+            return ['exists'=>true, 'total'=>intval($proof['total']), 'source'=>'tsemou_proof', 'fallback'=>false];
+        }
+
+        $legacy = tsemou_hard_count_posts('evidence');
+        if (!empty($legacy['exists'])) {
+            return ['exists'=>true, 'total'=>intval($legacy['total']), 'source'=>'evidence', 'fallback'=>true];
+        }
+
+        if (!empty($proof['exists'])) {
+            return ['exists'=>true, 'total'=>0, 'source'=>'tsemou_proof', 'fallback'=>false];
+        }
+
+        return ['exists'=>false, 'total'=>0, 'source'=>'none', 'fallback'=>false];
+    }
+}
+
+if (!function_exists('tsemou_hard_proof_first_evidence_post_types')) {
+    function tsemou_hard_proof_first_evidence_post_types() {
+        $types = [];
+        if (post_type_exists('tsemou_proof')) $types[] = 'tsemou_proof';
+        if (post_type_exists('evidence')) $types[] = 'evidence';
+        return $types;
+    }
+}
+
 if (!function_exists('tsemou_hard_find_company')) {
     function tsemou_hard_find_company($name) {
         $name = sanitize_text_field($name);
@@ -211,11 +247,12 @@ if (!function_exists('tsemou_hard_find_company')) {
 if (!function_exists('tsemou_hard_evidence_candidates')) {
     function tsemou_hard_evidence_candidates($company_id) {
         $out = [];
-        if (!post_type_exists('evidence')) return $out;
+        $types = tsemou_hard_proof_first_evidence_post_types();
+        if (empty($types)) return $out;
         $company_id = absint($company_id);
 
         $q = new WP_Query([
-            'post_type' => 'evidence',
+            'post_type' => $types,
             'post_status' => ['publish','draft','pending','private'],
             'posts_per_page' => 80,
             'orderby' => 'modified',
@@ -258,7 +295,7 @@ if (!function_exists('tsemou_hard_developer_console_render')) {
         if (!$company_id && !empty($_GET['company_name'])) $company_id = tsemou_hard_find_company($_GET['company_name']);
 
         $company = tsemou_hard_count_posts('company');
-        $evidence = tsemou_hard_count_posts('evidence');
+        $evidence = tsemou_hard_proof_first_evidence_count();
         $events = tsemou_hard_count_posts('tsemou_event');
         $entities = tsemou_hard_count_posts('tsemou_entity');
 

@@ -17,6 +17,7 @@ class Discovery_Orchestrator {
         add_action('admin_menu', [$this, 'admin_menu'], 26);
         add_filter('cron_schedules', [__CLASS__, 'cron_schedules']);
         add_action('tsemou_phase_a_runtime_tick', [__CLASS__, 'runtime_tick']);
+        add_action('tsemou_phase_a_queue_worker', [__CLASS__, 'run_scheduled_worker'], 10, 1);
     }
 
     public static function option_key($name) {
@@ -332,11 +333,155 @@ class Discovery_Orchestrator {
 
         self::save_queue($queue);
         self::add_log('queue', 'Queued Phase A engine step.', ['engine' => $engine, 'queue_key' => $queue_key]);
+        self::schedule_worker_run($queue_key);
         return true;
     }
 
+    private static function schedule_worker_run($queue_key = '') {
+        $queue_key = sanitize_text_field((string) $queue_key);
+
+        if (!has_action('tsemou_phase_a_queue_worker', [__CLASS__, 'run_scheduled_worker'])) {
+            self::pipeline_trace('stage_4_worker_missing_hook', [
+                'hook' => 'tsemou_phase_a_queue_worker',
+                'queue_key' => $queue_key,
+                'executed' => 'no',
+                'reason' => 'worker_callback_not_registered',
+            ]);
+            return;
+        }
+
+        $args = [$queue_key];
+        if (!wp_next_scheduled('tsemou_phase_a_queue_worker', $args)) {
+            wp_schedule_single_event(time() + 5, 'tsemou_phase_a_queue_worker', $args);
+        }
+    }
+
+    public static function run_scheduled_worker($queue_key = '') {
+        $queue_key = sanitize_text_field((string) $queue_key);
+
+        try {
+            $queue = self::queue();
+            $target_index = -1;
+            $target_item = null;
+
+            foreach ($queue as $index => $item) {
+                if (($item['status'] ?? 'pending') !== 'pending') continue;
+                if ($queue_key !== '' && ($item['queue_key'] ?? '') !== $queue_key) continue;
+                $target_index = intval($index);
+                $target_item = $item;
+                break;
+            }
+
+            if ($target_index < 0 || !$target_item) {
+                self::pipeline_trace('stage_4_worker_no_queue_items', [
+                    'queue_key' => $queue_key,
+                    'executed' => 'no',
+                    'reason' => $queue_key !== '' ? 'no_matching_pending_queue_key' : 'no_pending_items',
+                ]);
+                return;
+            }
+
+            $post_id = absint($target_item['post_id'] ?? 0);
+            self::pipeline_trace('stage_4_post_id_received_by_worker', [
+                'queue_key' => sanitize_text_field((string) ($target_item['queue_key'] ?? $queue_key)),
+                'post_id' => $post_id,
+                'story_id' => absint($target_item['story_id'] ?? 0),
+                'executed' => 'yes',
+            ]);
+
+            self::pipeline_trace('stage_4_story_lookup_attempted', [
+                'queue_key' => sanitize_text_field((string) ($target_item['queue_key'] ?? $queue_key)),
+                'post_id' => $post_id,
+                'current_story_id' => absint($target_item['story_id'] ?? 0),
+                'executed' => 'yes',
+            ]);
+
+            $resolved_story_id = absint($target_item['story_id'] ?? 0);
+            $resolution_reason = '';
+            if ($resolved_story_id <= 0 && $post_id > 0) {
+                $post = get_post($post_id);
+                if ($post instanceof \WP_Post) {
+                    $resolved_story_id = absint($post_id);
+                    $resolution_reason = 'resolved_from_post_id';
+                } else {
+                    $resolution_reason = 'post_lookup_failed';
+                }
+            } elseif ($resolved_story_id > 0) {
+                $resolution_reason = 'existing_story_id_in_queue_item';
+            } else {
+                $resolution_reason = 'missing_story_id_and_post_id';
+            }
+
+            self::pipeline_trace('stage_4_story_created', [
+                'queue_key' => sanitize_text_field((string) ($target_item['queue_key'] ?? $queue_key)),
+                'post_id' => $post_id,
+                'executed' => 'no',
+                'reason' => 'creation_not_required',
+            ]);
+
+            self::pipeline_trace('stage_4_story_id_resolved', [
+                'queue_key' => sanitize_text_field((string) ($target_item['queue_key'] ?? $queue_key)),
+                'post_id' => $post_id,
+                'story_id' => $resolved_story_id,
+                'executed' => $resolved_story_id > 0 ? 'yes' : 'no',
+                'reason' => $resolved_story_id > 0 ? $resolution_reason : $resolution_reason,
+            ]);
+
+            if ($resolved_story_id > 0) {
+                $target_item['story_id'] = $resolved_story_id;
+                $queue[$target_index] = array_merge($queue[$target_index], $target_item, [
+                    'story_id' => $resolved_story_id,
+                    'updated_at' => current_time('mysql'),
+                ]);
+                self::save_queue($queue);
+            }
+
+            self::pipeline_trace('stage_4_discovery_worker_started', [
+                'queue_key' => sanitize_text_field((string) ($target_item['queue_key'] ?? $queue_key)),
+                'engine' => sanitize_key((string) ($target_item['current_engine'] ?? $target_item['type'] ?? '')),
+                'story_id' => absint($resolved_story_id),
+                'executed' => 'yes',
+                'source' => 'scheduled_worker',
+            ]);
+
+            if (is_array($queue) && isset($queue[$target_index])) {
+                $target = $queue[$target_index];
+                unset($queue[$target_index]);
+                array_unshift($queue, $target);
+                self::save_queue(array_values($queue));
+            }
+
+            $result = self::run_next_item();
+            if (empty($result['success']) && strpos((string) ($result['message'] ?? ''), 'No pending queue item found') !== false) {
+                self::pipeline_trace('stage_4_worker_no_queue_items', [
+                    'queue_key' => $queue_key,
+                    'executed' => 'no',
+                    'reason' => 'no_pending_items',
+                ]);
+            }
+        } catch (\Throwable $e) {
+            self::pipeline_trace('stage_4_worker_exception', [
+                'queue_key' => $queue_key,
+                'executed' => 'no',
+                'reason' => sanitize_text_field($e->getMessage()),
+            ]);
+        }
+    }
+
     public static function enqueue_story_processing($story_id, array $payload = [], $priority = 0) {
-        $payload['story_id'] = absint($story_id);
+        $resolved_story_id = absint($story_id);
+        $payload['story_id'] = $resolved_story_id;
+        if (empty($payload['post_id']) && $resolved_story_id > 0) {
+            $payload['post_id'] = $resolved_story_id;
+        }
+
+        self::pipeline_trace('stage_4_story_id_resolved', [
+            'story_id' => $resolved_story_id,
+            'post_id' => absint($payload['post_id'] ?? 0),
+            'executed' => $resolved_story_id > 0 ? 'yes' : 'no',
+            'reason' => $resolved_story_id > 0 ? 'resolved_at_enqueue_story_processing' : 'missing_story_id_at_enqueue_story_processing',
+        ]);
+
         return self::enqueue('story_processing', $payload, $priority);
     }
 
@@ -415,6 +560,18 @@ class Discovery_Orchestrator {
             }
 
             $engine = $item['current_engine'] ?? $item['type'] ?? '';
+            self::pipeline_trace('stage_4_discovery_worker_started', [
+                'queue_key' => sanitize_text_field((string) ($item['queue_key'] ?? '')),
+                'engine' => sanitize_key((string) $engine),
+                'story_id' => absint($item['story_id'] ?? 0),
+                'executed' => 'yes',
+                'source' => 'run_next_item',
+            ]);
+            self::pipeline_trace('4_discovery_worker_started', [
+                'queue_key' => sanitize_text_field((string) ($item['queue_key'] ?? '')),
+                'engine' => sanitize_key((string) $engine),
+                'story_id' => absint($item['story_id'] ?? 0),
+            ]);
             $queue[$index]['status'] = 'running';
             $queue[$index]['attempts'] = intval($item['attempts'] ?? 0) + 1;
             $queue[$index]['started_at'] = current_time('mysql');
@@ -518,6 +675,63 @@ class Discovery_Orchestrator {
     public static function execute_story_processing($item) {
         $payload = self::payload_from_item($item);
         $story_id = absint($payload['story_id'] ?? 0);
+        $post_id = absint($payload['post_id'] ?? 0);
+
+        self::pipeline_trace('stage_4_post_id_received_by_worker', [
+            'queue_key' => sanitize_text_field((string) ($item['queue_key'] ?? '')),
+            'post_id' => $post_id,
+            'story_id' => $story_id,
+            'executed' => 'yes',
+            'source' => 'execute_story_processing',
+        ]);
+
+        self::pipeline_trace('stage_4_story_lookup_attempted', [
+            'queue_key' => sanitize_text_field((string) ($item['queue_key'] ?? '')),
+            'post_id' => $post_id,
+            'current_story_id' => $story_id,
+            'executed' => 'yes',
+            'source' => 'execute_story_processing',
+        ]);
+
+        if ($story_id <= 0 && $post_id > 0) {
+            $post = get_post($post_id);
+            if ($post instanceof \WP_Post) {
+                $story_id = absint($post_id);
+                $payload['story_id'] = $story_id;
+
+                self::pipeline_trace('stage_4_story_created', [
+                    'queue_key' => sanitize_text_field((string) ($item['queue_key'] ?? '')),
+                    'post_id' => $post_id,
+                    'executed' => 'no',
+                    'reason' => 'creation_not_required_post_found',
+                    'source' => 'execute_story_processing',
+                ]);
+            } else {
+                self::pipeline_trace('stage_4_story_created', [
+                    'queue_key' => sanitize_text_field((string) ($item['queue_key'] ?? '')),
+                    'post_id' => $post_id,
+                    'executed' => 'no',
+                    'reason' => 'post_lookup_failed',
+                    'source' => 'execute_story_processing',
+                ]);
+            }
+        }
+
+        self::pipeline_trace('stage_4_story_id_resolved', [
+            'queue_key' => sanitize_text_field((string) ($item['queue_key'] ?? '')),
+            'post_id' => $post_id,
+            'story_id' => $story_id,
+            'executed' => $story_id > 0 ? 'yes' : 'no',
+            'reason' => $story_id > 0 ? 'resolved_before_story_processing' : 'story_id_remains_zero',
+            'source' => 'execute_story_processing',
+        ]);
+
+        self::pipeline_trace('stage_3_discovery_executed', [
+            'story_id' => $story_id,
+            'engine' => 'story_processing',
+            'executed' => $story_id > 0 ? 'yes' : 'no',
+            'reason' => $story_id > 0 ? '' : 'missing_story_id',
+        ]);
 
         if ($story_id <= 0) {
             return [
@@ -647,9 +861,12 @@ class Discovery_Orchestrator {
         }
 
         $trust_updates = [];
+        $linked_company_ids = [];
         if ($payload['proof_id'] > 0 && class_exists('\\TSEMOU\\Modules\\TrustEngine\\Trust_Engine')) {
             $company_ids = \TSEMOU\Modules\TrustEngine\Trust_Engine::get_company_ids_for_evidence($payload['proof_id']);
-            foreach ($company_ids as $company_id) {
+            $linked_company_ids = array_values(array_filter(array_map('absint', (array) $company_ids)));
+
+            foreach ($linked_company_ids as $company_id) {
                 $company_id = absint($company_id);
                 if ($company_id <= 0) continue;
                 $trust_updates[$company_id] = \TSEMOU\Modules\TrustEngine\Trust_Engine::recalculate_company_trust($company_id);
@@ -708,6 +925,85 @@ class Discovery_Orchestrator {
                 ],
             ]);
         }
+
+        $handoff_status = [
+            'status' => 'skipped',
+            'reason' => 'proof_or_company_missing',
+            'proof_id' => absint($payload['proof_id'] ?? 0),
+            'company_id' => 0,
+            'link_id' => '',
+        ];
+
+        if (empty($linked_company_ids) && !empty($payload['evidence']['meta']['connected_company_ids']) && is_array($payload['evidence']['meta']['connected_company_ids'])) {
+            $linked_company_ids = array_values(array_filter(array_map('absint', $payload['evidence']['meta']['connected_company_ids'])));
+        }
+
+        $primary_company_id = !empty($linked_company_ids) ? absint($linked_company_ids[0]) : 0;
+        if ($payload['proof_id'] > 0 && $primary_company_id > 0) {
+            $source_url = esc_url_raw((string) ($payload['evidence']['meta']['permalink'] ?? ''));
+            if (!$source_url) {
+                $source_url = esc_url_raw((string) get_post_meta($payload['proof_id'], '_tsemou_proof_url', true));
+            }
+
+            $handoff_payload = [
+                'story_id' => absint($story_id),
+                'proof_id' => absint($payload['proof_id']),
+                'evidence_id' => absint($payload['proof_id']),
+                'company_id' => $primary_company_id,
+                'company_ids' => $linked_company_ids,
+                'raw_id' => 'story_' . absint($story_id),
+                'source_url' => $source_url,
+                'url' => $source_url,
+            ];
+
+            if (!class_exists('\\TSEMOU\\Modules\\AutomaticLinking\\Automatic_Linking')) {
+                $file = TSEMOU_CORE_PATH . 'modules/automatic-linking/class-automatic-linking.php';
+                if (file_exists($file)) {
+                    require_once $file;
+                }
+            }
+
+            if (class_exists('\\TSEMOU\\Modules\\AutomaticLinking\\Automatic_Linking')) {
+                try {
+                    $handoff_result = \TSEMOU\Modules\AutomaticLinking\Automatic_Linking::process($handoff_payload);
+                    $handoff_status = [
+                        'status' => !empty($handoff_result['success']) ? 'success' : 'failed',
+                        'reason' => sanitize_text_field((string) ($handoff_result['message'] ?? 'automatic_linking_failed')),
+                        'proof_id' => absint($payload['proof_id']),
+                        'company_id' => $primary_company_id,
+                        'link_id' => sanitize_text_field((string) ($handoff_result['link_id'] ?? '')),
+                    ];
+                } catch (\Throwable $e) {
+                    $handoff_status = [
+                        'status' => 'failed',
+                        'reason' => 'automatic_linking_exception',
+                        'proof_id' => absint($payload['proof_id']),
+                        'company_id' => $primary_company_id,
+                        'link_id' => '',
+                    ];
+                }
+            } else {
+                $handoff_status = [
+                    'status' => 'skipped',
+                    'reason' => 'automatic_linking_not_loaded',
+                    'proof_id' => absint($payload['proof_id']),
+                    'company_id' => $primary_company_id,
+                    'link_id' => '',
+                ];
+            }
+        }
+
+        $payload['automatic_linking_handoff'] = $handoff_status;
+        self::pipeline_trace('stage_8_automatic_linking_handoff', [
+            'story_id' => absint($story_id),
+            'proof_id' => absint($payload['proof_id']),
+            'company_id' => absint($handoff_status['company_id'] ?? 0),
+            'status' => sanitize_key((string) ($handoff_status['status'] ?? 'skipped')),
+            'reason' => sanitize_text_field((string) ($handoff_status['reason'] ?? 'unknown')),
+            'link_id' => sanitize_text_field((string) ($handoff_status['link_id'] ?? '')),
+            'source' => 'execute_story_processing',
+        ]);
+        self::add_log('story_processing_link_handoff', 'Automatic Linking handoff evaluated after canonical proof processing.', $handoff_status);
 
         self::add_log('story_processing', 'Story processed into canonical evidence.', [
             'story_id' => $story_id,
@@ -1164,6 +1460,12 @@ class Discovery_Orchestrator {
 
     public static function execute_knowledge_graph_update($item) {
         $payload = self::payload_from_item($item);
+        self::pipeline_trace('9_knowledge_graph_update', [
+            'story_id' => absint($payload['story_id'] ?? 0),
+            'company_id' => absint($payload['company_id'] ?? 0),
+            'source_id' => absint($payload['source_id'] ?? 0),
+            'executed' => 'yes',
+        ]);
 
         if (!class_exists('\\TSEMOU\\Modules\\AutomaticLinking\\Automatic_Linking')) {
             $file = TSEMOU_CORE_PATH . 'modules/automatic-linking/class-automatic-linking.php';
@@ -1174,6 +1476,15 @@ class Discovery_Orchestrator {
 
         if (class_exists('\\TSEMOU\\Modules\\AutomaticLinking\\Automatic_Linking')) {
             $kg = \TSEMOU\Modules\AutomaticLinking\Automatic_Linking::update_knowledge_graph($payload);
+            if (empty($kg['updated'])) {
+                self::pipeline_trace('9_knowledge_graph_update', [
+                    'story_id' => absint($payload['story_id'] ?? 0),
+                    'company_id' => absint($payload['company_id'] ?? 0),
+                    'source_id' => absint($payload['source_id'] ?? 0),
+                    'executed' => 'no',
+                    'reason' => sanitize_text_field((string) ($kg['message'] ?? 'graph_update_skipped')),
+                ]);
+            }
             $payload['knowledge_graph_status'] = !empty($kg['updated']) ? 'graph_context_relation_updated' : 'graph_update_skipped_needs_review';
             $payload['relationship_id'] = $kg['relationship_id'] ?? '';
 
@@ -1203,6 +1514,15 @@ class Discovery_Orchestrator {
             'next_engine' => null,
             'payload' => $payload
         ];
+    }
+
+    private static function pipeline_trace($stage, $context = []) {
+        if (!(defined('WP_DEBUG_LOG') && WP_DEBUG_LOG)) return;
+
+        $payload = is_array($context) ? $context : [];
+        $payload['stage'] = sanitize_text_field((string) $stage);
+        $payload['ts'] = current_time('mysql');
+        error_log('[TSEMOU_PIPELINE_TRACE] ' . wp_json_encode($payload));
     }
 
     public function admin_menu() {

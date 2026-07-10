@@ -136,6 +136,27 @@ class Automatic_Linking {
         return 0;
     }
 
+    private static function sync_evidence_company_relationship($evidence_id, $company_id) {
+        $evidence_id = absint($evidence_id);
+        $company_id = absint($company_id);
+
+        if ($evidence_id <= 0 || $company_id <= 0) return;
+
+        $company_ids = [$company_id];
+
+        update_post_meta($evidence_id, '_tsemou_company_id', $company_id);
+        update_post_meta($evidence_id, '_tsemou_entity_id', $company_id);
+        update_post_meta($evidence_id, '_tsemou_evidence_company_ids', $company_ids);
+        update_post_meta($evidence_id, '_tsemou_evidence_company', $company_id);
+        update_post_meta($evidence_id, '_tsemou_related_company', $company_id);
+        update_post_meta($evidence_id, 'related_company', $company_id);
+        update_post_meta($evidence_id, 'company', $company_ids);
+
+        if (class_exists('\TSEMOU\Modules\ProofEngine\Proof_Engine')) {
+            \TSEMOU\Modules\ProofEngine\Proof_Engine::instance()->sync_evidence_to_companies($evidence_id);
+        }
+    }
+
     public static function process($payload = []) {
         if (!is_array($payload)) $payload = [];
 
@@ -154,6 +175,10 @@ class Automatic_Linking {
 
         if ($evidence_id && $source_id) {
             update_post_meta($evidence_id, '_tsemou_source_id', $source_id);
+        }
+
+        if ($evidence_id && $company_id) {
+            self::sync_evidence_company_relationship($evidence_id, $company_id);
         }
 
         if ($evidence_id && $company_id && class_exists('\TSEMOU\Modules\EntityEvidenceLinks\Entity_Evidence_Links')) {

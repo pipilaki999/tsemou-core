@@ -1,0 +1,17 @@
+warning: in the working copy of 'modules/automatic-linking/class-automatic-linking.php', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'modules/company-intelligence/class-company-intelligence-engine.php', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'modules/discovery-orchestrator/class-discovery-orchestrator.php', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'modules/entity-evidence-links/class-entity-evidence-links.php', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'modules/proof-engine/class-proof-engine.php', LF will be replaced by CRLF the next time Git touches it
+ includes/class-core.php                            |   2 [32m+[m
+ .../automatic-linking/class-automatic-linking.php  |  25 [32m++[m
+ .../class-company-intelligence-engine.php          | 139 [32m+++++++[m[31m-[m
+ .../developer-console/class-developer-console.php  |  59 [32m++[m[31m-[m
+ .../class-discovery-orchestrator.php               | 324 [32m++++++++++++++++[m[31m-[m
+ .../class-entity-evidence-links.php                | 129 [32m++++++[m[31m-[m
+ .../class-evidence-processing-engine.php           | 397 [32m++++++++++++++++++++[m[31m-[m
+ modules/proof-engine/class-proof-engine.php        | 177 [32m++++++++[m[31m-[m
+ modules/story/class-story-module.php               | 138 [32m+++++++[m
+ scripts/build-plugin-zip.ps1                       |  21 [32m+[m[31m-[m
+ tsemou-core.php                                    |  49 [32m++[m[31m-[m
+ 11 files changed, 1427 insertions(+), 33 deletions(-)

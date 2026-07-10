@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TSEMOU Homepage Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header" aria-label="Primary">
+    <div class="header-inner">
+      <a class="logo" href="#" aria-label="TSEMOU home">
+        <span class="logo-mark">T</span>
+        <span class="logo-text">TSEMOU</span>
+      </a>
+      <nav class="header-nav" aria-label="Top actions">
+        <a href="#topics">Topics</a>
+        <a href="#" class="submit-link">Submit</a>
+        <button class="ghost-btn" type="button" aria-label="Switch language">EN</button>
+        <button class="profile-btn" type="button" aria-label="Open profile">Profile</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <div class="hero-topline">
+          <h1 id="hero-title">Good Morning.</h1>
+          <p class="hero-subtitle">Here's what changed.</p>
+        </div>
+        <p class="hero-identity">SEE • FEEL • FIX</p>
+
+        <section class="status-strip" aria-label="Today's brief and pulse">
+          <h2>Today</h2>
+          <ul class="status-items">
+            <li><strong>12</strong><span>Cases evolved</span></li>
+            <li><strong>41</strong><span>New evidence</span></li>
+            <li><strong>7</strong><span>Companies changed</span></li>
+            <li><strong>9</strong><span>Community actions</span></li>
+            <li><span>Humanitarian</span><strong class="pulse up">Escalating</strong></li>
+            <li><span>Public Trust</span><strong class="pulse down">Under pressure</strong></li>
+          </ul>
+        </section>
+      </div>
+      <form class="hero-search" role="search" aria-label="Search living stories">
+        <label for="heroSearch" class="sr-only">Search living stories</label>
+        <input id="heroSearch" type="search" placeholder="Search living stories, evidence, people, companies" autocomplete="off">
+      </form>
+    </section>
+
+    <div class="homepage-grid">
+      <aside class="left-column" aria-label="What is rising">
+        <div class="column-title-wrap">
+          <h2>COMMUNITY RANKINGS</h2>
+          <p>What is rising now</p>
+        </div>
+        <div id="communitySections"></div>
+      </aside>
+
+      <section class="center-column" aria-label="What became Living Case">
+        <div class="column-title-wrap">
+          <p class="today-matters">TODAY MATTERS</p>
+          <p class="center-logic">What became Living Case</p>
+        </div>
+        <div id="storyFeed" class="story-feed"></div>
+      </section>
+
+      <aside class="right-column" aria-label="What is being created now">
+        <div class="column-title-wrap">
+          <h2>COMMUNITY FEED</h2>
+          <p>Every Living Case begins here.</p>
+        </div>
+        <div id="liveNews" class="live-news"></div>
+      </aside>
+    </div>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

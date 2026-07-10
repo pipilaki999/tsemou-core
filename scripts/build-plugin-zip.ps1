@@ -1,4 +1,6 @@
-Param()
+Param(
+    [string] $OutputPath = ''
+)
 
 $ErrorActionPreference = 'Stop'
 
@@ -8,9 +10,19 @@ $distDir = Join-Path $repoRoot 'dist'
 $stagingRoot = Join-Path $distDir '_staging'
 $pluginFolderName = 'tsemou-core'
 $stageDir = Join-Path $stagingRoot $pluginFolderName
-$zipPath = Join-Path $distDir 'tsemou-core.zip'
+$zipPath = if ([string]::IsNullOrWhiteSpace($OutputPath)) {
+    Join-Path $distDir 'tsemou-core.zip'
+} else {
+    [System.IO.Path]::GetFullPath($OutputPath)
+}
+
+$zipDir = Split-Path -Parent $zipPath
+if ([string]::IsNullOrWhiteSpace($zipDir)) {
+    throw 'Invalid OutputPath: could not determine destination directory.'
+}
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
+New-Item -ItemType Directory -Path $zipDir -Force | Out-Null
 
 if (Test-Path $stagingRoot) {
     Remove-Item $stagingRoot -Recurse -Force
@@ -181,6 +193,11 @@ finally {
 $zip = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
 $entries = $zip.Entries | Select-Object -ExpandProperty FullName
 $zip.Dispose()
+
+$rawBackslashEntries = $entries | Where-Object { $_ -match '\\' }
+if ($rawBackslashEntries) {
+    throw 'ZIP contains Windows-style path separators (\\) in entry names, which is not deployment-safe.'
+}
 
 $normalizedEntries = $entries | ForEach-Object { $_.Replace('\', '/') }
 

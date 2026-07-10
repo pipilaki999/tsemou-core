@@ -5,6 +5,7 @@ if (!defined('ABSPATH')) exit;
 
 class Entity_Evidence_Links {
     private static $instance = null;
+    private static $last_evidence_diagnostics = [];
 
     public static function instance() {
         if (self::$instance === null) self::$instance = new self();
@@ -51,13 +52,108 @@ class Entity_Evidence_Links {
     }
 
     public static function evidence_posts() {
-        return get_posts([
-            'post_type' => 'evidence',
-            'post_status' => ['publish','draft','pending','private'],
-            'numberposts' => 500,
-            'orderby' => 'date',
-            'order' => 'DESC'
-        ]);
+        static $mismatch_logged = false;
+
+        $proofs = [];
+        $proof_total = 0;
+        if (post_type_exists('tsemou_proof')) {
+            $proof_total = self::count_posts_by_statuses('tsemou_proof', ['publish','draft','pending','private','future']);
+            $proofs = get_posts([
+                'post_type' => 'tsemou_proof',
+                'post_status' => ['publish','draft','pending','private','future'],
+                'numberposts' => 500,
+                'orderby' => 'date',
+                'order' => 'DESC',
+                'perm' => 'readable',
+                'suppress_filters' => true,
+                'no_found_rows' => true,
+            ]);
+        }
+
+        $legacy = [];
+        $legacy_total = 0;
+        if (post_type_exists('evidence')) {
+            $legacy_total = self::count_posts_by_statuses('evidence', ['publish','draft','pending','private']);
+            $legacy = get_posts([
+                'post_type' => 'evidence',
+                'post_status' => ['publish','draft','pending','private'],
+                'numberposts' => 500,
+                'orderby' => 'date',
+                'order' => 'DESC'
+            ]);
+        }
+
+        $proof_query_count = count($proofs);
+        $legacy_query_count = count($legacy);
+        $fallback_used = false;
+        $source_path = 'proof-first';
+
+        if ($proof_query_count > 0) {
+            if ($legacy_query_count > 0) {
+                $source_path = 'mixed';
+                $posts = array_merge($proofs, $legacy);
+            } else {
+                $posts = $proofs;
+            }
+        } elseif ($legacy_query_count > 0) {
+            $fallback_used = true;
+            $source_path = 'legacy-fallback-only';
+            $posts = $legacy;
+        } else {
+            $posts = [];
+        }
+
+        $warning = '';
+        if ($proof_total > 0 && $proof_query_count === 0) {
+            $warning = 'Proof visibility mismatch: tsemou_proof exists but Entity Evidence Links query returned 0.';
+            if (!$mismatch_logged) {
+                self::add_log('proof_visibility_mismatch', 0, $warning);
+                $mismatch_logged = true;
+            }
+        }
+
+        self::$last_evidence_diagnostics = [
+            'proof_total' => intval($proof_total),
+            'legacy_total' => intval($legacy_total),
+            'proof_query_count' => intval($proof_query_count),
+            'legacy_query_count' => intval($legacy_query_count),
+            'fallback_used' => $fallback_used,
+            'source_path' => $source_path,
+            'warning' => $warning,
+        ];
+
+        return $posts;
+    }
+
+    public static function evidence_diagnostics() {
+        if (empty(self::$last_evidence_diagnostics)) {
+            self::evidence_posts();
+        }
+
+        return self::$last_evidence_diagnostics;
+    }
+
+    private static function count_posts_by_statuses($post_type, $statuses = []) {
+        if (!post_type_exists($post_type)) {
+            return 0;
+        }
+
+        $counts = wp_count_posts($post_type);
+        if (!is_object($counts)) {
+            return 0;
+        }
+
+        $statuses = is_array($statuses) ? $statuses : [];
+        if (empty($statuses)) {
+            $statuses = ['publish', 'draft', 'pending', 'private'];
+        }
+
+        $total = 0;
+        foreach ($statuses as $status) {
+            $total += isset($counts->$status) ? intval($counts->$status) : 0;
+        }
+
+        return $total;
     }
 
     public static function link_object($evidence_id, $entity_id, $relationship_type, $confidence = 0, $notes = '') {
@@ -130,8 +226,11 @@ class Entity_Evidence_Links {
         return $found;
     }
 
-    public static function stats() {
-        $evidence = self::evidence_posts();
+    public static function stats($evidence = null) {
+        if (!is_array($evidence)) {
+            $evidence = self::evidence_posts();
+        }
+
         $linked_evidence = 0;
         $links_total = 0;
 
@@ -212,8 +311,9 @@ class Entity_Evidence_Links {
             }
         }
 
-        $stats = self::stats();
         $evidence_posts = self::evidence_posts();
+        $stats = self::stats($evidence_posts);
+        $diagnostics = self::evidence_diagnostics();
         $entities = self::entity_posts();
         $types = self::relationship_types();
         $logs = self::logs();
@@ -226,6 +326,10 @@ class Entity_Evidence_Links {
                 <div class="notice notice-success"><p><?php echo esc_html($notice['message']); ?></p></div>
             <?php endif; ?>
 
+            <?php if (!empty($diagnostics['warning'])): ?>
+                <div class="notice notice-warning"><p><?php echo esc_html($diagnostics['warning']); ?></p></div>
+            <?php endif; ?>
+
             <h2>Status</h2>
             <table class="widefat striped" style="max-width:760px;">
                 <tbody>
@@ -233,6 +337,11 @@ class Entity_Evidence_Links {
                     <tr><th>Linked Evidence</th><td><?php echo esc_html($stats['linked_evidence']); ?></td></tr>
                     <tr><th>Total Links</th><td><?php echo esc_html($stats['links_total']); ?></td></tr>
                     <tr><th>Available Entities</th><td><?php echo esc_html($stats['entities_total']); ?></td></tr>
+                    <tr><th>tsemou_proof count</th><td><?php echo esc_html($diagnostics['proof_total'] ?? 0); ?></td></tr>
+                    <tr><th>evidence count</th><td><?php echo esc_html($diagnostics['legacy_total'] ?? 0); ?></td></tr>
+                    <tr><th>Proof query returned</th><td><?php echo esc_html($diagnostics['proof_query_count'] ?? 0); ?></td></tr>
+                    <tr><th>Fallback used</th><td><?php echo !empty($diagnostics['fallback_used']) ? 'yes' : 'no'; ?></td></tr>
+                    <tr><th>Source path</th><td><?php echo esc_html($diagnostics['source_path'] ?? 'proof-first'); ?></td></tr>
                 </tbody>
             </table>
 

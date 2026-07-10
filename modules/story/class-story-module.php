@@ -14,6 +14,8 @@ class Story_Module {
         add_action('save_post_story', [$this, 'save_story_meta'], 10, 2);
         add_action('save_post_story', [$this, 'trigger_event_identity_analysis'], 20, 2);
         add_action('save_post_story', [$this, 'enqueue_story_processing_on_story_save'], 25, 2);
+        add_action('save_post_post', [$this, 'enqueue_story_processing_on_post_save'], 25, 2);
+        add_action('wp_after_insert_post', [$this, 'enqueue_story_processing_on_post_after_insert'], 25, 4);
         add_action('tsemou_story_promoted', [$this, 'handle_story_promoted'], 10, 2);
         add_action('tsemou_living_case_updated', [$this, 'handle_living_case_updated'], 10, 2);
         add_action('tsemou_public_pages_updated', [$this, 'handle_public_pages_updated'], 10, 1);
@@ -147,6 +149,142 @@ class Story_Module {
             'source_post_type' => 'story',
             'source_post_status' => sanitize_key($post->post_status ?? ''),
         ], 0);
+    }
+
+    public function enqueue_story_processing_on_post_save($post_id, $post) {
+        $this->pipeline_trace('stage_1_bridge_hook_entered', [
+            'post_id' => absint($post_id),
+            'post_type' => sanitize_key($post->post_type ?? ''),
+            'post_status' => sanitize_key($post->post_status ?? ''),
+            'executed' => 'yes',
+        ]);
+        $this->pipeline_trace('1_wordpress_post_created', [
+            'post_id' => absint($post_id),
+            'post_type' => sanitize_key($post->post_type ?? ''),
+            'post_status' => sanitize_key($post->post_status ?? ''),
+        ]);
+        $this->pipeline_trace('2_discovery_bridge_called', [
+            'post_id' => absint($post_id),
+            'post_type' => sanitize_key($post->post_type ?? ''),
+        ]);
+
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            $this->pipeline_trace('stage_2_discovery_scheduled', ['post_id' => absint($post_id), 'executed' => 'no', 'reason' => 'autosave']);
+            $this->pipeline_trace('3_discovery_queue_scheduled', ['post_id' => absint($post_id), 'scheduled' => 'no', 'reason' => 'autosave']);
+            return;
+        }
+        if (!$post || $post->post_type !== 'post') {
+            $this->pipeline_trace('stage_2_discovery_scheduled', ['post_id' => absint($post_id), 'executed' => 'no', 'reason' => 'not_standard_post']);
+            $this->pipeline_trace('3_discovery_queue_scheduled', ['post_id' => absint($post_id), 'scheduled' => 'no', 'reason' => 'not_standard_post']);
+            return;
+        }
+        if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
+            $this->pipeline_trace('stage_2_discovery_scheduled', ['post_id' => absint($post_id), 'executed' => 'no', 'reason' => 'autosave_or_revision']);
+            $this->pipeline_trace('3_discovery_queue_scheduled', ['post_id' => absint($post_id), 'scheduled' => 'no', 'reason' => 'autosave_or_revision']);
+            return;
+        }
+        if ($post->post_status === 'trash') {
+            $this->pipeline_trace('stage_2_discovery_scheduled', ['post_id' => absint($post_id), 'executed' => 'no', 'reason' => 'trash_status']);
+            $this->pipeline_trace('3_discovery_queue_scheduled', ['post_id' => absint($post_id), 'scheduled' => 'no', 'reason' => 'trash_status']);
+            return;
+        }
+
+        $title = trim(wp_strip_all_tags((string) get_the_title($post_id)));
+        if ($title === '') {
+            $this->pipeline_trace('stage_2_discovery_scheduled', ['post_id' => absint($post_id), 'executed' => 'no', 'reason' => 'empty_title']);
+            $this->pipeline_trace('3_discovery_queue_scheduled', ['post_id' => absint($post_id), 'scheduled' => 'no', 'reason' => 'empty_title']);
+            $this->log_post_discovery_bridge($post_id, $post->post_type, false, 'empty_title');
+            return;
+        }
+
+        if (!class_exists('\\TSEMOU\\Modules\\DiscoveryOrchestrator\\Discovery_Orchestrator')) {
+            $this->pipeline_trace('stage_2_discovery_scheduled', ['post_id' => absint($post_id), 'executed' => 'no', 'reason' => 'discovery_orchestrator_not_loaded']);
+            $this->pipeline_trace('3_discovery_queue_scheduled', ['post_id' => absint($post_id), 'scheduled' => 'no', 'reason' => 'discovery_orchestrator_not_loaded']);
+            $this->log_post_discovery_bridge($post_id, $post->post_type, false, 'discovery_orchestrator_not_loaded');
+            return;
+        }
+
+        $modified_gmt = sanitize_text_field((string) ($post->post_modified_gmt ?? ''));
+        $last_scheduled_gmt = sanitize_text_field((string) get_post_meta($post_id, '_tsemou_discovery_last_scheduled_modified_gmt', true));
+        if ($modified_gmt !== '' && $modified_gmt === $last_scheduled_gmt) {
+            $this->pipeline_trace('stage_2_discovery_scheduled', ['post_id' => absint($post_id), 'executed' => 'no', 'reason' => 'already_scheduled_for_current_revision']);
+            $this->pipeline_trace('3_discovery_queue_scheduled', ['post_id' => absint($post_id), 'scheduled' => 'no', 'reason' => 'already_scheduled_for_current_revision']);
+            $this->log_post_discovery_bridge($post_id, $post->post_type, false, 'already_scheduled_for_current_revision');
+            return;
+        }
+
+        $scheduled = \TSEMOU\Modules\DiscoveryOrchestrator\Discovery_Orchestrator::enqueue_story_processing($post_id, [
+            'post_id' => absint($post_id),
+            'source' => 'post_save',
+            'source_post_type' => 'post',
+            'source_post_status' => sanitize_key($post->post_status ?? ''),
+        ], 0);
+
+        if ($scheduled) {
+            if ($modified_gmt !== '') {
+                update_post_meta($post_id, '_tsemou_discovery_last_scheduled_modified_gmt', $modified_gmt);
+            }
+            update_post_meta($post_id, '_tsemou_discovery_last_scheduled_at', current_time('mysql'));
+            $this->pipeline_trace('stage_2_discovery_scheduled', [
+                'post_id' => absint($post_id),
+                'executed' => 'yes',
+                'source' => 'post_save',
+            ]);
+            $this->pipeline_trace('3_discovery_queue_scheduled', [
+                'post_id' => absint($post_id),
+                'scheduled' => 'yes',
+                'source' => 'post_save',
+            ]);
+            $this->log_post_discovery_bridge($post_id, $post->post_type, true, 'queued');
+            return;
+        }
+
+        $this->pipeline_trace('stage_2_discovery_scheduled', [
+            'post_id' => absint($post_id),
+            'executed' => 'no',
+            'reason' => 'queue_deduped_or_unavailable',
+        ]);
+        $this->pipeline_trace('3_discovery_queue_scheduled', [
+            'post_id' => absint($post_id),
+            'scheduled' => 'no',
+            'reason' => 'queue_deduped_or_unavailable',
+        ]);
+
+        $this->log_post_discovery_bridge($post_id, $post->post_type, false, 'queue_deduped_or_unavailable');
+    }
+
+    public function enqueue_story_processing_on_post_after_insert($post_id, $post, $update, $post_before) {
+        if (!$post || !($post instanceof \WP_Post)) return;
+        if ($post->post_type !== 'post') return;
+        $this->enqueue_story_processing_on_post_save($post_id, $post);
+    }
+
+    private function pipeline_trace($stage, $context = []) {
+        if (!(defined('WP_DEBUG_LOG') && WP_DEBUG_LOG)) return;
+
+        $payload = is_array($context) ? $context : [];
+        $payload['stage'] = sanitize_text_field((string) $stage);
+        $payload['ts'] = current_time('mysql');
+        error_log('[TSEMOU_PIPELINE_TRACE] ' . wp_json_encode($payload));
+    }
+
+    private function log_post_discovery_bridge($post_id, $post_type, $scheduled, $reason) {
+        $context = [
+            'post_discovery_hook_triggered' => 'yes',
+            'post_id' => absint($post_id),
+            'post_type' => sanitize_key($post_type),
+            'scheduled' => $scheduled ? 'yes' : 'no',
+            'reason' => sanitize_text_field($reason),
+        ];
+
+        if (class_exists('\\TSEMOU\\Modules\\DiscoveryOrchestrator\\Discovery_Orchestrator') && method_exists('\\TSEMOU\\Modules\\DiscoveryOrchestrator\\Discovery_Orchestrator', 'add_log')) {
+            \TSEMOU\Modules\DiscoveryOrchestrator\Discovery_Orchestrator::add_log('post_discovery_bridge', 'Normal post discovery bridge evaluated.', $context);
+            return;
+        }
+
+        if (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+            error_log('[TSEMOU_POST_DISCOVERY_BRIDGE] ' . wp_json_encode($context));
+        }
     }
 
     public function handle_story_promoted($story_id, $payload = []) {

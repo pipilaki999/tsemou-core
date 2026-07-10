@@ -88,6 +88,36 @@ class Company_Intelligence_Engine {
         return array_values(array_unique($out));
     }
 
+    private static function profile_payload($company_id) {
+        $raw = get_post_meta($company_id, '_tsemou_company_profile', true);
+
+        if (is_array($raw)) {
+            return $raw;
+        }
+
+        if (is_string($raw) && trim($raw) !== '') {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        return [];
+    }
+
+    public static function company_index_count($limit = 1000) {
+        $ids = get_posts([
+            'post_type' => 'company',
+            'post_status' => ['publish', 'draft', 'pending', 'private'],
+            'numberposts' => intval($limit),
+            'orderby' => 'title',
+            'order' => 'ASC',
+            'fields' => 'ids',
+        ]);
+
+        return is_array($ids) ? count($ids) : 0;
+    }
+
     public static function get_company_identity($company_id) {
         $company_id = absint($company_id);
         $post = get_post($company_id);
@@ -98,13 +128,23 @@ class Company_Intelligence_Engine {
 
         $official = self::first_meta($company_id, [
             '_tsemou_official_name',
+            '_tsemou_company_official_name',
             'tsemou_official_name',
             'official_name',
             'company_official_name',
         ], '');
 
+        $legal = self::first_meta($company_id, [
+            '_tsemou_legal_name',
+            '_tsemou_company_legal_name',
+            'tsemou_legal_name',
+            'legal_name',
+            'company_legal_name',
+        ], '');
+
         $display = self::first_meta($company_id, [
             '_tsemou_display_name',
+            '_tsemou_company_display_name',
             'tsemou_display_name',
             'display_name',
             'company_display_name',
@@ -112,6 +152,7 @@ class Company_Intelligence_Engine {
 
         $aliases_raw = self::first_meta($company_id, [
             '_tsemou_aliases',
+            '_tsemou_company_aliases',
             'tsemou_aliases',
             'aliases',
             'company_aliases',
@@ -119,6 +160,8 @@ class Company_Intelligence_Engine {
 
         $ticker = self::first_meta($company_id, [
             '_tsemou_ticker',
+            '_tsemou_company_ticker',
+            '_tsemou_company_stock_symbol',
             'tsemou_ticker',
             'ticker',
             'stock_symbol',
@@ -126,31 +169,84 @@ class Company_Intelligence_Engine {
 
         $website = self::first_meta($company_id, [
             '_tsemou_website',
+            '_tsemou_company_website',
+            '_tsemou_company_homepage',
+            '_tsemou_company_url',
+            '_tsemou_company_source_url',
             'tsemou_website',
             'website',
             'company_website',
             'url',
         ], '');
 
+        $profile = self::profile_payload($company_id);
+
+        $profile_name_values = [];
+        foreach (['name', 'display_name', 'official_name', 'legal_name'] as $profile_name_key) {
+            $value = $profile[$profile_name_key] ?? '';
+            if (is_scalar($value) && trim((string) $value) !== '') {
+                $profile_name_values[] = trim((string) $value);
+            }
+        }
+
+        $profile_aliases = self::split_aliases($profile['aliases'] ?? []);
+
+        $profile_ticker = '';
+        foreach (['ticker', 'stock_symbol'] as $profile_ticker_key) {
+            if (!empty($profile[$profile_ticker_key]) && is_scalar($profile[$profile_ticker_key])) {
+                $profile_ticker = trim((string) $profile[$profile_ticker_key]);
+                break;
+            }
+        }
+
+        if ($ticker === '' && $profile_ticker !== '') {
+            $ticker = $profile_ticker;
+        }
+
+        $profile_url_values = [];
+        foreach (['website', 'domain', 'source_url', 'homepage', 'url'] as $profile_url_key) {
+            $value = $profile[$profile_url_key] ?? '';
+            if (is_scalar($value) && trim((string) $value) !== '') {
+                $profile_url_values[] = trim((string) $value);
+            }
+        }
+
+        $meta_url_values = [];
+        foreach (['_tsemou_company_website', '_tsemou_company_domain', '_tsemou_company_source_url', '_tsemou_company_homepage', '_tsemou_company_url'] as $meta_url_key) {
+            $value = get_post_meta($company_id, $meta_url_key, true);
+            if (!is_array($value) && trim((string) $value) !== '') {
+                $meta_url_values[] = trim((string) $value);
+            }
+        }
+
+        $domain_candidates = array_values(array_unique(array_filter(array_map([__CLASS__, 'normalize_domain'], array_merge([$website], $profile_url_values, $meta_url_values)))));
+        $domain = !empty($domain_candidates) ? $domain_candidates[0] : '';
+
         $country = self::first_meta($company_id, [
             '_tsemou_country',
+            '_tsemou_company_country',
             'tsemou_country',
             'country',
         ], '');
 
         $industry = self::first_meta($company_id, [
             '_tsemou_industry',
+            '_tsemou_company_industry',
             'tsemou_industry',
             'industry',
         ], '');
 
         $aliases = self::split_aliases($aliases_raw);
-        $base_aliases = [$title, $display, $official];
+        $aliases = array_merge($aliases, $profile_aliases);
+
+        $base_aliases = array_merge([$title, $display, $official, $legal], $profile_name_values);
 
         if (!empty($ticker)) {
             $base_aliases[] = $ticker;
             $base_aliases[] = strtoupper($ticker);
         }
+
+        $base_aliases = array_merge($base_aliases, $domain_candidates);
 
         $aliases = array_values(array_unique(array_filter(array_merge($base_aliases, $aliases))));
 
@@ -160,12 +256,10 @@ class Company_Intelligence_Engine {
             if ($norm !== '') $normalized_aliases[] = $norm;
         }
 
-        $domain = self::normalize_domain($website);
-
         return [
             'company_id' => $company_id,
             'title' => $title,
-            'canonical_name' => $official ?: $display ?: $title,
+            'canonical_name' => $official ?: $legal ?: $display ?: $title,
             'display_name' => $display ?: $title,
             'official_name' => $official ?: '',
             'aliases' => $aliases,
@@ -173,6 +267,7 @@ class Company_Intelligence_Engine {
             'ticker' => strtoupper(trim((string) $ticker)),
             'website' => esc_url_raw((string) $website),
             'domain' => $domain,
+            'domains' => $domain_candidates,
             'country' => $country,
             'industry' => $industry,
             'status' => get_post_status($company_id),
@@ -315,6 +410,42 @@ class Company_Intelligence_Engine {
             if ($best) {
                 $best['identity'] = $company;
                 $matches[] = $best;
+            }
+        }
+
+        usort($matches, function($a, $b) {
+            return $b['confidence'] <=> $a['confidence'];
+        });
+
+        return array_slice($matches, 0, intval($limit));
+    }
+
+    public static function detect_by_source_domain($domain_or_url, $limit = 10) {
+        $input_domain = self::normalize_domain($domain_or_url);
+        if ($input_domain === '') return [];
+
+        $matches = [];
+
+        foreach (self::company_index() as $company) {
+            $company_domains = [];
+            if (!empty($company['domains']) && is_array($company['domains'])) {
+                $company_domains = array_values(array_unique(array_filter(array_map([__CLASS__, 'normalize_domain'], $company['domains']))));
+            }
+
+            if (empty($company_domains) && !empty($company['domain'])) {
+                $company_domains[] = self::normalize_domain($company['domain']);
+            }
+
+            if (in_array($input_domain, $company_domains, true)) {
+                $matches[] = [
+                    'company_id' => $company['company_id'],
+                    'title' => $company['title'],
+                    'canonical_name' => $company['canonical_name'],
+                    'match_type' => 'source_domain_exact',
+                    'matched_value' => $input_domain,
+                    'confidence' => 0.93,
+                    'identity' => $company,
+                ];
             }
         }
 
