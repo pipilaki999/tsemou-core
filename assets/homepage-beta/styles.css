@@ -1482,6 +1482,16 @@ main {
     aspect-ratio: auto;
   }
 
+  .center-column .living-case-card .card-media.card-media-evidence img {
+    width: 100%;
+    height: 460px;
+    max-height: none;
+    min-height: 0;
+    aspect-ratio: auto;
+    object-fit: cover;
+    display: block;
+  }
+
   .center-column .living-case-card {
     padding-left: 8px;
     padding-right: 8px;
