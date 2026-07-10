@@ -20,6 +20,8 @@ class Core {
         $this->trace_require('modules/scraping-engine/class-scraping-engine.php');
         $this->trace_require('modules/automatic-evidence-creation/class-automatic-evidence-creation.php');
         $this->trace_require('modules/automatic-linking/class-automatic-linking.php');
+        $this->trace_require('modules/entity-engine/class-entity-foundation-runtime.php');
+        $this->trace_require('modules/canonical-tsemit/class-canonical-tsemit-runtime.php');
         $this->trace_require('modules/entity-engine/class-entity-engine.php');
         $this->trace_require('modules/relationship-engine/class-relationship-engine.php');
         $this->trace_require('modules/entity-evidence-links/class-entity-evidence-links.php');
@@ -72,6 +74,8 @@ class Core {
         if (class_exists('\TSEMOU\Modules\ScrapingEngine\Scraping_Engine') && method_exists('\TSEMOU\Modules\ScrapingEngine\Scraping_Engine', 'instance')) { $this->trace_instance('\\TSEMOU\Modules\ScrapingEngine\Scraping_Engine'); }
         if (class_exists('\TSEMOU\Modules\AutomaticEvidenceCreation\Automatic_Evidence_Creation') && method_exists('\TSEMOU\Modules\AutomaticEvidenceCreation\Automatic_Evidence_Creation', 'instance')) { $this->trace_instance('\\TSEMOU\Modules\AutomaticEvidenceCreation\Automatic_Evidence_Creation'); }
         if (class_exists('\TSEMOU\Modules\AutomaticLinking\Automatic_Linking') && method_exists('\TSEMOU\Modules\AutomaticLinking\Automatic_Linking', 'instance')) { $this->trace_instance('\\TSEMOU\Modules\AutomaticLinking\Automatic_Linking'); }
+        if (class_exists('\TSEMOU\Modules\EntityFoundation\Entity_Foundation_Runtime') && method_exists('\TSEMOU\Modules\EntityFoundation\Entity_Foundation_Runtime', 'instance')) { $this->trace_instance('\\TSEMOU\Modules\EntityFoundation\Entity_Foundation_Runtime'); }
+        if (class_exists('\TSEMOU\Modules\CanonicalTSEMIT\Canonical_TSEMIT_Runtime') && method_exists('\TSEMOU\Modules\CanonicalTSEMIT\Canonical_TSEMIT_Runtime', 'instance')) { $this->trace_instance('\\TSEMOU\Modules\CanonicalTSEMIT\Canonical_TSEMIT_Runtime'); }
         if (class_exists('\TSEMOU\Modules\EntityEngine\Entity_Engine') && method_exists('\TSEMOU\Modules\EntityEngine\Entity_Engine', 'instance')) { $this->trace_instance('\\TSEMOU\Modules\EntityEngine\Entity_Engine'); }
         if (class_exists('\TSEMOU\Modules\RelationshipEngine\Relationship_Engine') && method_exists('\TSEMOU\Modules\RelationshipEngine\Relationship_Engine', 'instance')) { $this->trace_instance('\\TSEMOU\Modules\RelationshipEngine\Relationship_Engine'); }
         if (class_exists('\TSEMOU\Modules\EntityEvidenceLinks\Entity_Evidence_Links') && method_exists('\TSEMOU\Modules\EntityEvidenceLinks\Entity_Evidence_Links', 'instance')) { $this->trace_instance('\\TSEMOU\Modules\EntityEvidenceLinks\Entity_Evidence_Links'); }

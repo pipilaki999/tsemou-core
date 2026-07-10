@@ -5,6 +5,7 @@ if (!defined('ABSPATH')) exit;
 
 class Developer_Console {
     private static $instance = null;
+    const ENTITY_REGISTRATION_STATUS_OPTION = 'tsemou_entity_registration_last_status';
 
     public static function instance() {
         if (self::$instance === null) self::$instance = new self();
@@ -14,6 +15,85 @@ class Developer_Console {
     private function __construct() {
         add_action('admin_menu', [$this, 'admin_menu'], 5);
         add_action('admin_init', [$this, 'admin_router_fallback'], 1);
+        add_action('admin_post_tsemou_run_entity_registration', [$this, 'handle_entity_registration_run']);
+    }
+
+    public function handle_entity_registration_run() {
+        if (!is_admin()) {
+            wp_die('Invalid context.');
+        }
+
+        if (strtoupper(sanitize_text_field((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'))) !== 'POST') {
+            wp_die('Invalid request method.');
+        }
+
+        if (!current_user_can('manage_options')) {
+            wp_die('Sorry, you are not allowed to synchronize the entity registry.');
+        }
+
+        check_admin_referer('tsemou_run_entity_registration', 'tsemou_entity_registration_nonce');
+
+        if (!class_exists('\TSEMOU\Modules\EntityFoundation\Entity_Migrator')) {
+            update_option(self::ENTITY_REGISTRATION_STATUS_OPTION, [
+                'ts' => current_time('mysql'),
+                'success' => false,
+                'code' => 'entity_migrator_missing',
+            ], false);
+
+            wp_safe_redirect(add_query_arg([
+                'page' => 'tsemou-developer-console',
+                'entity_registry_sync' => 'failed',
+            ], admin_url('admin.php')));
+            exit;
+        }
+
+        $allow_cb = function($allow, $channel) {
+            return sanitize_key((string) $channel) === 'developer_console' ? true : $allow;
+        };
+
+        add_filter('tsemou_allow_migration_run', $allow_cb, 10, 2);
+        $result = \TSEMOU\Modules\EntityFoundation\Entity_Migrator::run_entity_registration_cycle_if_guarded(
+            200,
+            \TSEMOU\Modules\EntityFoundation\Entity_Migrator::MIGRATION_TARGET_VERSION,
+            'developer_console',
+            100
+        );
+        remove_filter('tsemou_allow_migration_run', $allow_cb, 10);
+
+        $state = is_array($result['state'] ?? null) ? $result['state'] : [];
+        $status = [
+            'ts' => current_time('mysql'),
+            'success' => !empty($result['success']),
+            'blocked' => !empty($result['blocked']),
+            'code' => sanitize_key((string) ($result['code'] ?? 'ok')),
+            'message' => sanitize_text_field((string) ($result['message'] ?? '')),
+            'version' => sanitize_text_field((string) ($result['version'] ?? '')),
+            'supported_types' => self::entity_registration_supported_types(),
+            'entity_count' => self::canonical_entity_count(),
+            'last_execution_time' => current_time('mysql'),
+            'completion_state' => !empty($result['done']) ? 'done' : 'running',
+            'done' => !empty($result['done']),
+            'cap_reached' => !empty($result['cap_reached']),
+            'steps_executed' => intval($result['steps_executed'] ?? 0),
+            'final_type_index' => intval($result['final_type_index'] ?? 0),
+            'final_source_type' => sanitize_key((string) ($result['final_source_type'] ?? '')),
+            'final_offset' => intval($result['final_offset'] ?? 0),
+            'scanned_objects' => intval($result['action_scanned_objects'] ?? 0),
+            'created_entities' => intval($result['action_created_entities'] ?? 0),
+            'existing_entities_skipped' => intval($result['action_existing_entities_skipped'] ?? 0),
+            'failed_objects' => intval($result['action_failed_objects'] ?? 0),
+            'processed' => intval($state['processed'] ?? 0),
+            'state' => $state,
+        ];
+
+        update_option(self::ENTITY_REGISTRATION_STATUS_OPTION, $status, false);
+
+        $redirect_state = !empty($status['blocked']) ? 'blocked' : (!empty($status['success']) ? 'ok' : 'failed');
+        wp_safe_redirect(add_query_arg([
+            'page' => 'tsemou-developer-console',
+            'entity_registry_sync' => $redirect_state,
+        ], admin_url('admin.php')));
+        exit;
     }
 
 
@@ -140,6 +220,8 @@ class Developer_Console {
         $events = self::count_posts('tsemou_event');
         $entities = self::count_posts('tsemou_entity');
         $proofs = self::count_posts('tsemou_proof');
+        $canonical = self::canonical_diagnostics(1);
+        $canonical_ready = !empty($canonical['tables']['entities_exists']) && !empty($canonical['tables']['tsemits_exists']);
 
         $classes = self::detect_classes();
 
@@ -186,11 +268,11 @@ class Developer_Console {
             ],
             [
                 'engine' => 'Community / TSEMIT Engine',
-                'status' => 'foundation',
+                'status' => $canonical_ready ? 'loaded' : 'foundation',
                 'records' => self::estimate_tsemit_records(),
-                'source' => 'post meta: _tsemou_tsemit_votes',
-                'class' => 'meta foundation',
-                'next' => 'Real user vote tables and moderation'
+                'source' => $canonical_ready ? 'custom table: tsemou_tsemits' : 'post meta: _tsemou_tsemit_votes',
+                'class' => $canonical_ready ? 'canonical foundation' : 'meta foundation',
+                'next' => $canonical_ready ? 'Expand coverage to more entity surfaces' : 'Real user vote tables and moderation'
             ],
             [
                 'engine' => 'Trust / TSEMScore Engine',
@@ -221,6 +303,15 @@ class Developer_Console {
 
     public static function estimate_tsemit_records() {
         global $wpdb;
+
+        if (class_exists('\\TSEMOU\\Modules\\CanonicalTSEMIT\\Canonical_TSEMIT_Store')) {
+            $table = $wpdb->prefix . 'tsemou_tsemits';
+            $exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table));
+            if ($exists === $table) {
+                return intval($wpdb->get_var("SELECT COUNT(*) FROM {$table}"));
+            }
+        }
+
         $count = $wpdb->get_var(
             $wpdb->prepare(
                 "SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key = %s",
@@ -236,6 +327,104 @@ class Developer_Console {
             "SELECT COUNT(DISTINCT post_id) FROM {$wpdb->postmeta} WHERE meta_key IN ('_tsemou_trust_score','_tsemou_final_trust_score')"
         );
         return intval($count);
+    }
+
+    public static function canonical_diagnostics($comparison_limit = 20) {
+        global $wpdb;
+
+        $entities_table = $wpdb->prefix . 'tsemou_entities';
+        $tsemits_table = $wpdb->prefix . 'tsemou_tsemits';
+
+        $entities_exists = ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $entities_table)) === $entities_table);
+        $tsemits_exists = ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $tsemits_table)) === $tsemits_table);
+
+        $entities_total = $entities_exists ? intval($wpdb->get_var("SELECT COUNT(*) FROM {$entities_table}")) : 0;
+        $tsemits_total = $tsemits_exists ? intval($wpdb->get_var("SELECT COUNT(*) FROM {$tsemits_table}")) : 0;
+
+        $migration_status = class_exists('\\TSEMOU\\Modules\\EntityFoundation\\Entity_Migrator')
+            ? \TSEMOU\Modules\EntityFoundation\Entity_Migrator::migration_status()
+            : [];
+
+        $comparisons = [];
+        if ($entities_exists && $tsemits_exists && post_type_exists('company')) {
+            $companies = get_posts([
+                'post_type' => 'company',
+                'post_status' => ['publish','draft','pending','private'],
+                'numberposts' => max(1, intval($comparison_limit)),
+                'orderby' => 'ID',
+                'order' => 'DESC',
+                'fields' => 'ids',
+            ]);
+
+            foreach ($companies as $company_id) {
+                $company_id = absint($company_id);
+                $legacy_votes = get_post_meta($company_id, '_tsemou_community_votes', true);
+                $legacy_active = 0;
+                if (is_array($legacy_votes)) {
+                    foreach ($legacy_votes as $legacy_vote) {
+                        if (!is_array($legacy_vote) || !empty($legacy_vote['blocked'])) continue;
+                        $legacy_active++;
+                    }
+                }
+
+                $entity_id = intval($wpdb->get_var($wpdb->prepare(
+                    "SELECT entity_id FROM {$entities_table} WHERE source_object_type = %s AND source_object_id = %d LIMIT 1",
+                    'company',
+                    $company_id
+                )));
+
+                $canonical_active = 0;
+                if ($entity_id > 0) {
+                    $canonical_active = intval($wpdb->get_var($wpdb->prepare(
+                        "SELECT COUNT(*) FROM {$tsemits_table} WHERE entity_id = %d AND state = %s",
+                        $entity_id,
+                        'active'
+                    )));
+                }
+
+                $comparisons[] = [
+                    'company_id' => $company_id,
+                    'entity_id' => $entity_id,
+                    'legacy_active' => $legacy_active,
+                    'canonical_active' => $canonical_active,
+                    'matches' => ($legacy_active === $canonical_active),
+                ];
+            }
+        }
+
+        return [
+            'tables' => [
+                'entities_exists' => $entities_exists,
+                'tsemits_exists' => $tsemits_exists,
+            ],
+            'counts' => [
+                'entities_total' => $entities_total,
+                'tsemits_total' => $tsemits_total,
+            ],
+            'migration_status' => $migration_status,
+            'legacy_canonical_comparison' => $comparisons,
+        ];
+    }
+
+    public static function canonical_entity_count() {
+        if (!class_exists('\TSEMOU\Modules\EntityFoundation\Entity_Registry')) {
+            return 0;
+        }
+
+        return intval(\TSEMOU\Modules\EntityFoundation\Entity_Registry::instance()->count_entities());
+    }
+
+    public static function entity_registration_supported_types() {
+        if (!class_exists('\TSEMOU\Modules\EntityFoundation\Entity_Registry')) {
+            return [];
+        }
+
+        return \TSEMOU\Modules\EntityFoundation\Entity_Registry::instance()->supported_source_types();
+    }
+
+    public static function entity_registration_last_status() {
+        $status = get_option(self::ENTITY_REGISTRATION_STATUS_OPTION, []);
+        return is_array($status) ? $status : [];
     }
 
     public static function find_company_id_by_name($name) {
@@ -402,6 +591,7 @@ class Developer_Console {
             'wordpress_version' => get_bloginfo('version'),
             'php_version' => PHP_VERSION,
             'engines' => $rows,
+            'canonical' => self::canonical_diagnostics(),
             'company_diagnostic' => $company_diag,
         ];
     }
@@ -507,6 +697,8 @@ class Developer_Console {
         }
 
         $engine_rows = self::engine_rows();
+        $entity_registration_last = self::entity_registration_last_status();
+        $entity_registration_types = self::entity_registration_supported_types();
         ?>
         <div class="wrap tsemou-dev-console">
             <style>
@@ -531,6 +723,74 @@ class Developer_Console {
                 <div class="card"><div class="muted">Evidence</div><div class="big"><?php echo esc_html(self::count_posts('evidence')['total']); ?></div></div>
                 <div class="card"><div class="muted">Events</div><div class="big"><?php echo esc_html(self::count_posts('tsemou_event')['total']); ?></div></div>
             </div>
+
+            <?php $canonical_diag = self::canonical_diagnostics(10); ?>
+            <div class="tsemou-grid">
+                <div class="card"><div class="muted">Canonical Entities</div><div class="big"><?php echo esc_html($canonical_diag['counts']['entities_total'] ?? 0); ?></div></div>
+                <div class="card"><div class="muted">Canonical TSEMITs</div><div class="big"><?php echo esc_html($canonical_diag['counts']['tsemits_total'] ?? 0); ?></div></div>
+                <div class="card"><div class="muted">Entity Migration</div><div class="big"><?php echo !empty($canonical_diag['migration_status']['entity_registration']['done']) ? 'done' : 'running'; ?></div></div>
+                <div class="card"><div class="muted">Vote Migration</div><div class="big"><?php echo !empty($canonical_diag['migration_status']['vote_migration']['done']) ? 'done' : 'running'; ?></div></div>
+            </div>
+
+            <h2>Canonical Entity Registry Synchronization</h2>
+            <?php if (!empty($_GET['entity_registry_sync'])): ?>
+                <?php $state = sanitize_key((string) $_GET['entity_registry_sync']); ?>
+                <div class="notice <?php echo $state === 'ok' ? 'notice-success' : ($state === 'blocked' ? 'notice-warning' : 'notice-error'); ?> is-dismissible">
+                    <p>
+                        <?php
+                        if ($state === 'ok') echo 'Entity registry synchronization executed.';
+                        elseif ($state === 'blocked') echo 'Entity registry synchronization was blocked by guard policy.';
+                        else echo 'Entity registry synchronization failed.';
+                        ?>
+                    </p>
+                </div>
+            <?php endif; ?>
+
+            <div class="card" style="margin-bottom:20px;">
+                <p><strong>Current Canonical Entity Count:</strong> <?php echo esc_html(self::canonical_entity_count()); ?></p>
+                <p><strong>Supported Object Types:</strong> <?php echo esc_html(empty($entity_registration_types) ? 'none' : implode(', ', $entity_registration_types)); ?></p>
+                <p><strong>Last Synchronization Status:</strong> <?php echo esc_html($entity_registration_last['code'] ?? 'never_run'); ?></p>
+                <p><strong>Last Execution Time:</strong> <?php echo esc_html($entity_registration_last['last_execution_time'] ?? 'never'); ?></p>
+                <p><strong>Steps Executed (this action):</strong> <?php echo esc_html(intval($entity_registration_last['steps_executed'] ?? 0)); ?></p>
+                <p><strong>Scanned Objects:</strong> <?php echo esc_html(intval($entity_registration_last['scanned_objects'] ?? 0)); ?></p>
+                <p><strong>New Entities Created:</strong> <?php echo esc_html(intval($entity_registration_last['created_entities'] ?? 0)); ?></p>
+                <p><strong>Existing Entities Skipped:</strong> <?php echo esc_html(intval($entity_registration_last['existing_entities_skipped'] ?? 0)); ?></p>
+                <p><strong>Failed Registrations:</strong> <?php echo esc_html(intval($entity_registration_last['failed_objects'] ?? 0)); ?></p>
+                <p><strong>Final Source Type:</strong> <?php echo esc_html($entity_registration_last['final_source_type'] ?? ''); ?></p>
+                <p><strong>Final Type Index:</strong> <?php echo esc_html(intval($entity_registration_last['final_type_index'] ?? 0)); ?></p>
+                <p><strong>Final Offset:</strong> <?php echo esc_html(intval($entity_registration_last['final_offset'] ?? 0)); ?></p>
+                <p><strong>Completion State:</strong> <?php echo esc_html($entity_registration_last['completion_state'] ?? 'not_started'); ?></p>
+                <p><strong>Done:</strong> <?php echo !empty($entity_registration_last['done']) ? 'yes' : 'no'; ?></p>
+                <p><strong>Safety Cap Reached:</strong> <?php echo !empty($entity_registration_last['cap_reached']) ? 'yes' : 'no'; ?></p>
+                <?php if (!empty($entity_registration_last['message'])): ?>
+                    <p><strong>Last Error:</strong> <?php echo esc_html($entity_registration_last['message']); ?></p>
+                <?php endif; ?>
+
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                    <input type="hidden" name="action" value="tsemou_run_entity_registration">
+                    <?php wp_nonce_field('tsemou_run_entity_registration', 'tsemou_entity_registration_nonce'); ?>
+                    <button type="submit" class="button button-primary">Synchronize Entity Registry</button>
+                </form>
+            </div>
+
+            <h2>Canonical vs Legacy Vote Comparison</h2>
+            <table class="widefat striped">
+                <thead><tr><th>Company ID</th><th>Entity ID</th><th>Legacy Active</th><th>Canonical Active</th><th>Match</th></tr></thead>
+                <tbody>
+                <?php if (empty($canonical_diag['legacy_canonical_comparison'])): ?>
+                    <tr><td colspan="5">No comparison data available yet.</td></tr>
+                <?php endif; ?>
+                <?php foreach (($canonical_diag['legacy_canonical_comparison'] ?? []) as $row): ?>
+                    <tr>
+                        <td><?php echo esc_html($row['company_id']); ?></td>
+                        <td><?php echo esc_html($row['entity_id']); ?></td>
+                        <td><?php echo esc_html($row['legacy_active']); ?></td>
+                        <td><?php echo esc_html($row['canonical_active']); ?></td>
+                        <td class="<?php echo !empty($row['matches']) ? 'ok' : 'warn'; ?>"><?php echo !empty($row['matches']) ? 'yes' : 'no'; ?></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
 
             <h2>Run Full Diagnostics</h2>
             <form method="get" style="background:#fff;border:1px solid #dbe3ef;padding:16px;border-radius:14px;margin-bottom:20px;">
